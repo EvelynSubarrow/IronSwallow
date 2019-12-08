@@ -2,6 +2,7 @@
 
 import logging, json, datetime, io, zlib
 from time import sleep
+from collections import OrderedDict
 import lxml.etree as ElementTree
 
 import xmlschema
@@ -24,6 +25,29 @@ SCHEMA = xmlschema.XMLSchema("ppv16/rttiPPTSchema_v16.xsd")
 
 with open("secret.json") as f:
     SECRET = json.load(f)
+
+def strip_message(obj, l=0):
+    out = obj
+    if type(obj) in (dict,OrderedDict):
+        out = type(obj)()
+        for key,value in obj.items():
+            new_key = key.split(":")[-1].lstrip("@")
+
+            if l==0 and new_key.startswith("ns") or new_key.startswith("xmlns"):
+                pass
+            elif type(value) in (list, dict, OrderedDict):
+                out[new_key] = strip_message(value, l+1)
+            else:
+                out[new_key] = value
+    elif type(obj) in (list,):
+        out = type(obj)()
+        for item in obj:
+            if type(item) in (list, dict, OrderedDict):
+                out.append(strip_message(item, l+1))
+            else:
+                out.append(item)
+
+    return out
 
 def connect_and_subscribe(mq):
     for n in range(1,31):
@@ -61,6 +85,8 @@ class Listener(stomp.ConnectionListener):
 
         tree = ElementTree.fromstring(message)
         parsed = SCHEMA.to_dict(tree)
+
+        strip_message(parsed)
 
     def on_error(self, headers, message):
         print('received an error "%s"' % message)
