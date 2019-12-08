@@ -2,7 +2,9 @@
 
 import logging, json, datetime, io, zlib
 from time import sleep
+import lxml.etree as ElementTree
 
+import xmlschema
 import stomp
 
 fh = logging.FileHandler('logs/swallow.log')
@@ -17,6 +19,8 @@ ch.setFormatter(format)
 fh.setFormatter(format)
 log.addHandler(fh)
 log.addHandler(ch)
+
+SCHEMA = xmlschema.XMLSchema("ppv16/rttiPPTSchema_v16.xsd")
 
 with open("secret.json") as f:
     SECRET = json.load(f)
@@ -36,7 +40,7 @@ def connect_and_subscribe(mq):
                 "destination": SECRET["subscribe"],
                 "id": 1,
                 "ack": "client-individual",
-                #"activemq.subscriptionName": SECRET["identifier"],
+                "activemq.subscriptionName": SECRET["identifier"],
                 })
             log.info("Connected!")
             return
@@ -54,6 +58,9 @@ class Listener(stomp.ConnectionListener):
         self._mq.ack(id=headers['message-id'], subscription=headers['subscription'])
 
         message = zlib.decompress(message, zlib.MAX_WBITS | 32)
+
+        tree = ElementTree.fromstring(message)
+        parsed = SCHEMA.to_dict(tree)
 
     def on_error(self, headers, message):
         print('received an error "%s"' % message)
