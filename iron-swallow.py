@@ -15,11 +15,12 @@ fh.setLevel(logging.DEBUG)
 
 log = logging.getLogger("IronSwallow")
 log.setLevel(logging.DEBUG)
+log.propagate = False
+
 format = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s", '%Y-%m-%dT%H:%M:%S%z')
-ch.setFormatter(format)
-fh.setFormatter(format)
-log.addHandler(fh)
-log.addHandler(ch)
+for handler in (ch,fh):
+    handler.setFormatter(format)
+    log.addHandler(handler)
 
 SCHEMA = xmlschema.XMLSchema("ppv16/rttiPPTSchema_v16.xsd")
 
