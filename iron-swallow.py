@@ -8,6 +8,8 @@ import lxml.etree as ElementTree
 import xmlschema
 import stomp
 
+from util import database
+
 fh = logging.FileHandler('logs/swallow.log')
 ch = logging.StreamHandler()
 ch.setLevel(logging.DEBUG)
@@ -76,18 +78,28 @@ def connect_and_subscribe(mq):
     log.error("Connection attempts exhausted")
 
 class Listener(stomp.ConnectionListener):
-    def __init__(self, mq):
+    def __init__(self, mq, cursor):
         self._mq = mq
+        self.cursor = cursor
 
     def on_message(self, headers, message):
         self._mq.ack(id=headers['message-id'], subscription=headers['subscription'])
+        c = self.cursor
 
         message = zlib.decompress(message, zlib.MAX_WBITS | 32)
 
         tree = ElementTree.fromstring(message)
-        parsed = SCHEMA.to_dict(tree)
 
-        strip_message(parsed)
+        parsed = SCHEMA.to_dict(tree)
+        parsed = strip_message(parsed)
+
+        if headers["MessageType"]=="SC":
+            for schedule in parsed["uR"].get("schedule", []):
+                c.execute("INSERT INTO darwin_schedules VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT DO NOTHING; COMMIT;", (
+                    schedule["uid"], schedule["rid"], schedule["ssd"], schedule["trainId"], schedule["status"],
+                    schedule["trainCat"], schedule["toc"], schedule["isActive"],
+                    schedule["isCharter"], schedule["deleted"], schedule["isPassengerSvc"],
+                    ))
 
     def on_error(self, headers, message):
         print('received an error "%s"' % message)
@@ -103,8 +115,9 @@ class Listener(stomp.ConnectionListener):
 mq = stomp.Connection([(SECRET["hostname"], 61613)],
     keepalive=True, auto_decode=False, heartbeats=(10000, 10000))
 
-mq.set_listener('iron-swallow', Listener(mq))
-connect_and_subscribe(mq)
+with database.DatabaseConnection() as db_connection, db_connection.new_cursor() as cursor:
+    mq.set_listener('iron-swallow', Listener(mq, cursor))
+    connect_and_subscribe(mq)
 
-while True:
-    sleep(1)
+    while True:
+        sleep(1)
