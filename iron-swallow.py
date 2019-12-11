@@ -83,7 +83,6 @@ class Listener(stomp.ConnectionListener):
         self.cursor = cursor
 
     def on_message(self, headers, message):
-        self._mq.ack(id=headers['message-id'], subscription=headers['subscription'])
         c = self.cursor
 
         message = zlib.decompress(message, zlib.MAX_WBITS | 32)
@@ -95,11 +94,17 @@ class Listener(stomp.ConnectionListener):
 
         if headers["MessageType"]=="SC":
             for schedule in parsed["uR"].get("schedule", []):
-                c.execute("INSERT INTO darwin_schedules VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT DO NOTHING; COMMIT;", (
+                c.execute("""INSERT INTO darwin_schedules VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    ON CONFLICT (rid) DO UPDATE SET
+                    signalling_id=EXCLUDED.signalling_id, status=EXCLUDED.status, category=EXCLUDED.category,
+                    operator=EXCLUDED.operator, is_active=EXCLUDED.is_active, is_charter=EXCLUDED.is_charter,
+                    is_deleted=EXCLUDED.is_deleted, is_passenger=EXCLUDED.is_passenger; COMMIT;""", (
                     schedule["uid"], schedule["rid"], schedule["ssd"], schedule["trainId"], schedule["status"],
                     schedule["trainCat"], schedule["toc"], schedule["isActive"],
                     schedule["isCharter"], schedule["deleted"], schedule["isPassengerSvc"],
                     ))
+
+        self._mq.ack(id=headers['message-id'], subscription=headers['subscription'])
 
     def on_error(self, headers, message):
         print('received an error "%s"' % message)
