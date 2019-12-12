@@ -25,6 +25,7 @@ for handler in (ch,fh):
     log.addHandler(handler)
 
 SCHEMA = xmlschema.XMLSchema("ppv16/rttiPPTSchema_v16.xsd")
+SCHEMA_SCHEDULE = xmlschema.XMLSchema("ppv16/rttiPPTSchedules_v3.xsd")
 
 with open("secret.json") as f:
     SECRET = json.load(f)
@@ -36,7 +37,7 @@ def strip_message(obj, l=0):
         for key,value in obj.items():
             new_key = key.split(":")[-1].lstrip("@")
 
-            if l==0 and new_key.startswith("ns") or new_key.startswith("xmlns"):
+            if l==0 and new_key.startswith("ns") or new_key.startswith("xmlns") or new_key.startswith("rtti"):
                 pass
             elif type(value) in (list, dict, OrderedDict):
                 out[new_key] = strip_message(value, l+1)
@@ -93,16 +94,48 @@ class Listener(stomp.ConnectionListener):
         parsed = strip_message(parsed)
 
         if headers["MessageType"]=="SC":
-            for schedule in parsed["uR"].get("schedule", []):
-                c.execute("""INSERT INTO darwin_schedules VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            for schedule in parsed["uR"].get("schedule", []): pass
+
+            for schedule_tree in tree.find("{http://www.thalesgroup.com/rtti/PushPort/v16}uR").findall("{http://www.thalesgroup.com/rtti/PushPort/v16}schedule"):
+                schedule = OrderedDict(SCHEMA_SCHEDULE.types["Schedule"].decode(schedule_tree)[2])
+
+                c.execute("""INSERT INTO darwin_schedules VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     ON CONFLICT (rid) DO UPDATE SET
                     signalling_id=EXCLUDED.signalling_id, status=EXCLUDED.status, category=EXCLUDED.category,
                     operator=EXCLUDED.operator, is_active=EXCLUDED.is_active, is_charter=EXCLUDED.is_charter,
-                    is_deleted=EXCLUDED.is_deleted, is_passenger=EXCLUDED.is_passenger; COMMIT;""", (
-                    schedule["uid"], schedule["rid"], schedule["ssd"], schedule["trainId"], schedule["status"],
-                    schedule["trainCat"], schedule["toc"], schedule["isActive"],
+                    is_deleted=EXCLUDED.is_deleted, is_passenger=EXCLUDED.is_passenger;""", (
+                    schedule["uid"], schedule["rid"], schedule.get("rsid"), schedule["ssd"], schedule["trainId"],
+                    schedule["status"], schedule["trainCat"], schedule["toc"], schedule["isActive"],
                     schedule["isCharter"], schedule["deleted"], schedule["isPassengerSvc"],
                     ))
+
+                index = 0
+                last_time, ssd_offset = datetime.time(0,0), 0
+
+                for child in schedule_tree.getchildren():
+                    child_name = ElementTree.QName(child).localname
+                    if child_name in ["OPOR", "OR", "OPIP", "IP", "PP", "DT", "OPDT"]:
+                        location = OrderedDict(SCHEMA_SCHEDULE.types[child_name].decode(child)[2])
+
+                        times = []
+                        for time in [location.get(a, None) for a in ["pta", "wta", "wtp", "ptd", "wtd"]]:
+                            if time:
+                                if len(time)==5:
+                                    time += ":00"
+                                time = datetime.datetime.strptime(time, "%H:%M:%S").time()
+                                if time < last_time:
+                                    ssd_offset += 1
+                                time = datetime.datetime.combine(datetime.datetime.strptime(schedule["ssd"], "%Y-%m-%d").date(), time) + datetime.timedelta(days=ssd_offset)
+                            times.append(time)
+
+                        c.execute("""INSERT INTO darwin_schedule_locations VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT DO NOTHING;""",
+                            (schedule["rid"], index, child_name, location["tpl"], location["act"], *times, location["can"], location.get("rdelay", 0)))
+                        index += 1
+
+        if headers["MessageType"]=="TS":
+            for schedule in parsed["uR"].get("TS"):
+                for location in schedule["Location"]:
+                    pass
 
         self._mq.ack(id=headers['message-id'], subscription=headers['subscription'])
 

@@ -26,7 +26,7 @@ CREATE TABLE darwin_schedule_locations(
     index                 SMALLINT,
     type                  VARCHAR(4)  NOT NULL,
     tiploc                VARCHAR(7)  NOT NULL,
-    action                VARCHAR(12) NOT NULL,
+    activity              VARCHAR(12) NOT NULL,
 
     pta                   TIMESTAMP DEFAULT NULL,
     wta                   TIMESTAMP DEFAULT NULL,
