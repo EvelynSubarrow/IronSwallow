@@ -22,7 +22,7 @@ CREATE INDEX idx_sched_ssd on darwin_schedules(ssd);
 CREATE INDEX idx_sched_rid on darwin_schedules(rid);
 
 CREATE TABLE darwin_schedule_locations(
-    rid                   CHAR(15)    UNIQUE NOT NULL REFERENCES darwin_schedules(rid) ON DELETE CASCADE,
+    rid                   CHAR(15)    NOT NULL REFERENCES darwin_schedules(rid) ON DELETE CASCADE,
     index                 SMALLINT,
     type                  VARCHAR(4)  NOT NULL,
     tiploc                VARCHAR(7)  NOT NULL,
