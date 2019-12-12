@@ -27,11 +27,11 @@ CREATE TABLE darwin_schedule_locations(
     tiploc                VARCHAR(7)  NOT NULL,
     action                VARCHAR(12) NOT NULL,
 
-    wta                   TIMESTAMP DEFAULT NULL,
-    wtd                   TIMESTAMP DEFAULT NULL,
-    wtp                   TIMESTAMP DEFAULT NULL,
     pta                   TIMESTAMP DEFAULT NULL,
+    wta                   TIMESTAMP DEFAULT NULL,
+    wtp                   TIMESTAMP DEFAULT NULL,
     ptd                   TIMESTAMP DEFAULT NULL,
+    wtd                   TIMESTAMP DEFAULT NULL,
 
     -- live data
     cancelled             BOOL NOT NULL DEFAULT FALSE,
