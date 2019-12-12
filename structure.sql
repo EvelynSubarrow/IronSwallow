@@ -1,6 +1,7 @@
 CREATE TABLE darwin_schedules(
     uid                   VARCHAR(7) NOT NULL,
     rid                   CHAR(15)   NOT NULL,
+    rsid                  CHAR(6),
     ssd                   DATE       NOT NULL,
     signalling_id         CHAR(4)    NOT NULL,
     status                CHAR(1)    NOT NULL,
