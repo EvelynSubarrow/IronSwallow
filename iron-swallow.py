@@ -130,6 +130,8 @@ class Listener(stomp.ConnectionListener):
 
                         c.execute("""INSERT INTO darwin_schedule_locations VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT DO NOTHING;""",
                             (schedule["rid"], index, child_name, location["tpl"], location["act"], *times, location["can"], location.get("rdelay", 0)))
+
+                        c.execute("COMMIT;")
                         index += 1
 
         if headers["MessageType"]=="TS":
