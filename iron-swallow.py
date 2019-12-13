@@ -112,6 +112,8 @@ class Listener(stomp.ConnectionListener):
                 index = 0
                 last_time, ssd_offset = datetime.time(0,0), 0
 
+                c.execute("DELETE FROM darwin_schedule_locations WHERE rid=%s;", (schedule["rid"],))
+
                 for child in schedule_tree.getchildren():
                     child_name = ElementTree.QName(child).localname
                     if child_name in ["OPOR", "OR", "OPIP", "IP", "PP", "DT", "OPDT"]:
@@ -125,6 +127,7 @@ class Listener(stomp.ConnectionListener):
                                 time = datetime.datetime.strptime(time, "%H:%M:%S").time()
                                 if time < last_time:
                                     ssd_offset += 1
+                                last_time = time
                                 time = datetime.datetime.combine(datetime.datetime.strptime(schedule["ssd"], "%Y-%m-%d").date(), time) + datetime.timedelta(days=ssd_offset)
                             times.append(time)
 
