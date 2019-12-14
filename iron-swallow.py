@@ -32,6 +32,8 @@ with open("secret.json") as f:
     SECRET = json.load(f)
 
 def compare_time(t1, t2):
+    if not (t1 and t2):
+        return 0
     t1,t2 = [a.hour*3600+a.minute*60+a.second for a in (t1,t2)]
     return (Decimal(t1)-Decimal(t2))/3600
 
@@ -115,7 +117,7 @@ class Listener(stomp.ConnectionListener):
                     ))
 
                 index = 0
-                last_time, ssd_offset = datetime.time(0,0), 0
+                last_time, ssd_offset = None, 0
 
                 c.execute("DELETE FROM darwin_schedule_locations WHERE rid=%s;", (schedule["rid"],))
 
