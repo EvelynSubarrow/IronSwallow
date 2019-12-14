@@ -2,6 +2,7 @@
 
 import logging, json, datetime, io, zlib
 from time import sleep
+from decimal import Decimal
 from collections import OrderedDict
 import lxml.etree as ElementTree
 
@@ -29,6 +30,10 @@ SCHEMA_SCHEDULE = xmlschema.XMLSchema("ppv16/rttiPPTSchedules_v3.xsd")
 
 with open("secret.json") as f:
     SECRET = json.load(f)
+
+def compare_time(t1, t2):
+    t1,t2 = [a.hour*3600+a.minute*60+a.second for a in (t1,t2)]
+    return (Decimal(t1)-Decimal(t2))/3600
 
 def strip_message(obj, l=0):
     out = obj
@@ -120,13 +125,22 @@ class Listener(stomp.ConnectionListener):
                         location = OrderedDict(SCHEMA_SCHEDULE.types[child_name].decode(child)[2])
 
                         times = []
-                        for time in [location.get(a, None) for a in ["pta", "wta", "wtp", "ptd", "wtd"]]:
+                        for time_n, time in [(a, location.get(a, None)) for a in ["pta", "wta", "wtp", "ptd", "wtd"]]:
                             if time:
                                 if len(time)==5:
                                     time += ":00"
                                 time = datetime.datetime.strptime(time, "%H:%M:%S").time()
-                                if time < last_time:
+
+                                # Crossed midnight, increment ssd offset
+                                if compare_time(time, last_time) < -6:
                                     ssd_offset += 1
+                                # Normal increase or decrease, nothing we really need to do here
+                                elif -6 <= compare_time(time, last_time) <= +18:
+                                    pass
+                                # Back in time, crossed midnight (in reverse), decrement ssd offset
+                                elif +18 < compare_time(time, last_time):
+                                    ssd_offset -= 1
+
                                 last_time = time
                                 time = datetime.datetime.combine(datetime.datetime.strptime(schedule["ssd"], "%Y-%m-%d").date(), time) + datetime.timedelta(days=ssd_offset)
                             times.append(time)
