@@ -161,7 +161,7 @@ class Listener(stomp.ConnectionListener):
         self._mq.ack(id=headers['message-id'], subscription=headers['subscription'])
 
     def on_error(self, headers, message):
-        print('received an error "%s"' % message)
+        log.error('received an error "%s"' % message)
 
     def on_heartbeat_timeout(self):
         log.error("Heartbeat timeout")
