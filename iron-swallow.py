@@ -100,7 +100,7 @@ class Listener(stomp.ConnectionListener):
         parsed = SCHEMA.to_dict(tree)
         parsed = strip_message(parsed)
 
-        if headers["MessageType"]=="SC":
+        if "schedule" in parsed["uR"]:
             for schedule in parsed["uR"].get("schedule", []): pass
 
             for schedule_tree in tree.find("{http://www.thalesgroup.com/rtti/PushPort/v16}uR").findall("{http://www.thalesgroup.com/rtti/PushPort/v16}schedule"):
@@ -153,7 +153,7 @@ class Listener(stomp.ConnectionListener):
                         c.execute("COMMIT;")
                         index += 1
 
-        if headers["MessageType"]=="TS":
+        if "TS" in parsed["uR"]:
             for schedule in parsed["uR"].get("TS"):
                 for location in schedule["Location"]:
                     pass
