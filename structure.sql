@@ -48,3 +48,9 @@ CREATE INDEX idx_sched_location_tiploc on darwin_schedule_locations(tiploc);
 CREATE INDEX idx_sched_location_wta on darwin_schedule_locations(wta);
 CREATE INDEX idx_sched_location_wtd on darwin_schedule_locations(wtd);
 CREATE INDEX idx_sched_location_wtp on darwin_schedule_locations(wtp);
+
+CREATE TABLE last_received_sequence (
+    id SMALLINT NOT NULL UNIQUE,
+    sequence INTEGER NOT NULL,
+    time_acquired TIMESTAMP NOT NULL
+)

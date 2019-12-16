@@ -150,7 +150,6 @@ class Listener(stomp.ConnectionListener):
                         c.execute("""INSERT INTO darwin_schedule_locations VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT DO NOTHING;""",
                             (schedule["rid"], index, child_name, location["tpl"], location["act"], *times, location["can"], location.get("rdelay", 0)))
 
-                        c.execute("COMMIT;")
                         index += 1
 
         if "TS" in parsed["uR"]:
@@ -159,6 +158,12 @@ class Listener(stomp.ConnectionListener):
                     pass
 
         self._mq.ack(id=headers['message-id'], subscription=headers['subscription'])
+        c.execute("""INSERT INTO last_received_sequence VALUES (0, %s, %s)
+            ON CONFLICT (id)
+            DO UPDATE SET sequence=EXCLUDED.sequence, time_acquired=EXCLUDED.time_acquired;""", (
+            headers["SequenceNumber"], datetime.datetime.now()))
+
+        c.execute("COMMIT;")
 
     def on_error(self, headers, message):
         log.error('received an error "%s"' % message)
