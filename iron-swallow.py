@@ -99,9 +99,10 @@ class Listener(stomp.ConnectionListener):
 
         parsed = SCHEMA.to_dict(tree)
         parsed = strip_message(parsed)
+        parsed = parsed.get("uR", {})
 
-        if "schedule" in parsed["uR"]:
-            for schedule in parsed["uR"].get("schedule", []): pass
+        if "schedule" in parsed:
+            for schedule in parsed.get("schedule", []): pass
 
             for schedule_tree in tree.find("{http://www.thalesgroup.com/rtti/PushPort/v16}uR").findall("{http://www.thalesgroup.com/rtti/PushPort/v16}schedule"):
                 schedule = OrderedDict(SCHEMA_SCHEDULE.types["Schedule"].decode(schedule_tree)[2])
@@ -152,8 +153,8 @@ class Listener(stomp.ConnectionListener):
 
                         index += 1
 
-        if "TS" in parsed["uR"]:
-            for schedule in parsed["uR"].get("TS"):
+        if "TS" in parsed:
+            for schedule in parsed["TS"]:
                 for location in schedule["Location"]:
                     pass
 
