@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import logging, json, datetime, io, zlib
+import logging, json, datetime, io, zlib, gzip
 from time import sleep
 from decimal import Decimal
 from collections import OrderedDict
@@ -85,6 +85,74 @@ def connect_and_subscribe(mq):
             sleep(backoff)
     log.error("Connection attempts exhausted")
 
+def parse(cursor, message):
+    c = cursor
+
+    tree = ElementTree.fromstring(message)
+
+    parsed = SCHEMA.to_dict(tree)
+    parsed = strip_message(parsed)
+    parsed = parsed.get("uR", {})
+
+    if "schedule" in parsed:
+        for schedule in parsed.get("schedule", []): pass
+
+        for schedule_tree in tree.find("{http://www.thalesgroup.com/rtti/PushPort/v16}uR").findall("{http://www.thalesgroup.com/rtti/PushPort/v16}schedule"):
+            schedule = OrderedDict(SCHEMA_SCHEDULE.types["Schedule"].decode(schedule_tree)[2])
+
+            c.execute("""INSERT INTO darwin_schedules VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (rid) DO UPDATE SET
+                signalling_id=EXCLUDED.signalling_id, status=EXCLUDED.status, category=EXCLUDED.category,
+                operator=EXCLUDED.operator, is_active=EXCLUDED.is_active, is_charter=EXCLUDED.is_charter,
+                is_deleted=EXCLUDED.is_deleted, is_passenger=EXCLUDED.is_passenger;""", (
+                schedule["uid"], schedule["rid"], schedule.get("rsid"), schedule["ssd"], schedule["trainId"],
+                schedule["status"], schedule["trainCat"], schedule["toc"], schedule["isActive"],
+                schedule["isCharter"], schedule["deleted"], schedule["isPassengerSvc"],
+                ))
+
+            index = 0
+            last_time, ssd_offset = None, 0
+
+            c.execute("DELETE FROM darwin_schedule_locations WHERE rid=%s;", (schedule["rid"],))
+
+            for child in schedule_tree.getchildren():
+                child_name = ElementTree.QName(child).localname
+                if child_name in ["OPOR", "OR", "OPIP", "IP", "PP", "DT", "OPDT"]:
+                    location = OrderedDict(SCHEMA_SCHEDULE.types[child_name].decode(child)[2])
+
+                    times = []
+                    for time_n, time in [(a, location.get(a, None)) for a in ["pta", "wta", "wtp", "ptd", "wtd"]]:
+                        if time:
+                            if len(time)==5:
+                                time += ":00"
+                            time = datetime.datetime.strptime(time, "%H:%M:%S").time()
+
+                            # Crossed midnight, increment ssd offset
+                            if compare_time(time, last_time) < -6:
+                                ssd_offset += 1
+                            # Normal increase or decrease, nothing we really need to do here
+                            elif -6 <= compare_time(time, last_time) <= +18:
+                                pass
+                            # Back in time, crossed midnight (in reverse), decrement ssd offset
+                            elif +18 < compare_time(time, last_time):
+                                ssd_offset -= 1
+
+                            last_time = time
+                            time = datetime.datetime.combine(datetime.datetime.strptime(schedule["ssd"], "%Y-%m-%d").date(), time) + datetime.timedelta(days=ssd_offset)
+                        times.append(time)
+
+                    c.execute("""INSERT INTO darwin_schedule_locations VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT DO NOTHING;""",
+                        (schedule["rid"], index, child_name, location["tpl"], location["act"], *times, location["can"], location.get("rdelay", 0)))
+
+                    index += 1
+
+    if "TS" in parsed:
+        for schedule in parsed["TS"]:
+            for location in schedule["Location"]:
+                pass
+
+
+
 class Listener(stomp.ConnectionListener):
     def __init__(self, mq, cursor):
         self._mq = mq
@@ -92,73 +160,11 @@ class Listener(stomp.ConnectionListener):
 
     def on_message(self, headers, message):
         c = self.cursor
-
         message = zlib.decompress(message, zlib.MAX_WBITS | 32)
 
-        tree = ElementTree.fromstring(message)
-
-        parsed = SCHEMA.to_dict(tree)
-        parsed = strip_message(parsed)
-        parsed = parsed.get("uR", {})
-
-        if "schedule" in parsed:
-            for schedule in parsed.get("schedule", []): pass
-
-            for schedule_tree in tree.find("{http://www.thalesgroup.com/rtti/PushPort/v16}uR").findall("{http://www.thalesgroup.com/rtti/PushPort/v16}schedule"):
-                schedule = OrderedDict(SCHEMA_SCHEDULE.types["Schedule"].decode(schedule_tree)[2])
-
-                c.execute("""INSERT INTO darwin_schedules VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                    ON CONFLICT (rid) DO UPDATE SET
-                    signalling_id=EXCLUDED.signalling_id, status=EXCLUDED.status, category=EXCLUDED.category,
-                    operator=EXCLUDED.operator, is_active=EXCLUDED.is_active, is_charter=EXCLUDED.is_charter,
-                    is_deleted=EXCLUDED.is_deleted, is_passenger=EXCLUDED.is_passenger;""", (
-                    schedule["uid"], schedule["rid"], schedule.get("rsid"), schedule["ssd"], schedule["trainId"],
-                    schedule["status"], schedule["trainCat"], schedule["toc"], schedule["isActive"],
-                    schedule["isCharter"], schedule["deleted"], schedule["isPassengerSvc"],
-                    ))
-
-                index = 0
-                last_time, ssd_offset = None, 0
-
-                c.execute("DELETE FROM darwin_schedule_locations WHERE rid=%s;", (schedule["rid"],))
-
-                for child in schedule_tree.getchildren():
-                    child_name = ElementTree.QName(child).localname
-                    if child_name in ["OPOR", "OR", "OPIP", "IP", "PP", "DT", "OPDT"]:
-                        location = OrderedDict(SCHEMA_SCHEDULE.types[child_name].decode(child)[2])
-
-                        times = []
-                        for time_n, time in [(a, location.get(a, None)) for a in ["pta", "wta", "wtp", "ptd", "wtd"]]:
-                            if time:
-                                if len(time)==5:
-                                    time += ":00"
-                                time = datetime.datetime.strptime(time, "%H:%M:%S").time()
-
-                                # Crossed midnight, increment ssd offset
-                                if compare_time(time, last_time) < -6:
-                                    ssd_offset += 1
-                                # Normal increase or decrease, nothing we really need to do here
-                                elif -6 <= compare_time(time, last_time) <= +18:
-                                    pass
-                                # Back in time, crossed midnight (in reverse), decrement ssd offset
-                                elif +18 < compare_time(time, last_time):
-                                    ssd_offset -= 1
-
-                                last_time = time
-                                time = datetime.datetime.combine(datetime.datetime.strptime(schedule["ssd"], "%Y-%m-%d").date(), time) + datetime.timedelta(days=ssd_offset)
-                            times.append(time)
-
-                        c.execute("""INSERT INTO darwin_schedule_locations VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT DO NOTHING;""",
-                            (schedule["rid"], index, child_name, location["tpl"], location["act"], *times, location["can"], location.get("rdelay", 0)))
-
-                        index += 1
-
-        if "TS" in parsed:
-            for schedule in parsed["TS"]:
-                for location in schedule["Location"]:
-                    pass
-
+        parse(self.cursor, message)
         self._mq.ack(id=headers['message-id'], subscription=headers['subscription'])
+
         c.execute("""INSERT INTO last_received_sequence VALUES (0, %s, %s)
             ON CONFLICT (id)
             DO UPDATE SET sequence=EXCLUDED.sequence, time_acquired=EXCLUDED.time_acquired;""", (
