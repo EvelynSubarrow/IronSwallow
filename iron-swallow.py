@@ -231,7 +231,7 @@ mq = stomp.Connection([(SECRET["hostname"], 61613)],
 with database.DatabaseConnection() as db_connection, db_connection.new_cursor() as cursor:
     cursor.execute("SELECT * FROM last_received_sequence;")
     row = cursor.fetchone()
-    if row and (datetime.datetime.utcnow()-row[2]).seconds > 300:
+    if not row or (datetime.datetime.utcnow()-row[2]).seconds > 300:
         log.info("Last retrieval too old, using FTP snapshots")
         incorporate_ftp(cursor)
 
