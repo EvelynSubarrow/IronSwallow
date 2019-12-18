@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import logging, json, datetime, io, zlib, gzip
+from ftplib import FTP
 from time import sleep
 from decimal import Decimal
 from collections import OrderedDict
@@ -59,6 +60,43 @@ def strip_message(obj, l=0):
                 out.append(item)
 
     return out
+
+def incorporate_ftp(c):
+    ftp = FTP(SECRET["ftp-hostname"])
+    for n in range(1,31):
+        try:
+            log.info("FTP Connecting... (attempt %s)" % n)
+            ftp.connect()
+            log.info("FTP Connected")
+
+            read_buffer = bytearray()
+            file_list = []
+            actual_files = []
+
+            ftp.login(SECRET["ftp-username"], SECRET["ftp-password"])
+
+            ftp.retrlines("NLST snapshot", file_list.append)
+            ftp.retrlines("NLST pushport", file_list.append)
+
+            for file in file_list:
+                log.info("FTP retrieving {}".format(file))
+                read_buffer = bytearray()
+                ftp.retrbinary("RETR {}".format(file), read_buffer.extend)
+                actual_files.append((file, read_buffer))
+
+            for file, contents in actual_files:
+                log.info("Parsing retrieved file {}".format(file))
+                for line in gzip.decompress(contents).split(b"\n"):
+                    if line:
+                        parse(c, line)
+
+            return
+        except AssertionError as e:
+            backoff = min(n**2, 600)
+            log.error("FTP failed to connect, waiting {}s".format(backoff))
+            sleep(backoff)
+    log.error("FTP connection attempts exhausted")
+
 
 def connect_and_subscribe(mq):
     for n in range(1,31):
@@ -151,8 +189,6 @@ def parse(cursor, message):
             for location in schedule["Location"]:
                 pass
 
-
-
 class Listener(stomp.ConnectionListener):
     def __init__(self, mq, cursor):
         self._mq = mq
@@ -193,6 +229,12 @@ mq = stomp.Connection([(SECRET["hostname"], 61613)],
     keepalive=True, auto_decode=False, heartbeats=(10000, 10000))
 
 with database.DatabaseConnection() as db_connection, db_connection.new_cursor() as cursor:
+    cursor.execute("SELECT * FROM last_received_sequence;")
+    row = cursor.fetchone()
+    if row and (datetime.datetime.utcnow()-row[2]).seconds > 300:
+        log.info("Last retrieval too old, using FTP snapshots")
+        incorporate_ftp(cursor)
+
     mq.set_listener('iron-swallow', Listener(mq, cursor))
     connect_and_subscribe(mq)
 
