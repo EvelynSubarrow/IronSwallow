@@ -163,8 +163,8 @@ class Listener(stomp.ConnectionListener):
 
         c.execute("SELECT * FROM last_received_sequence;")
         row = c.fetchone()
-        if not row or ((row[1]+1)%1000000!=headers["SequenceNumber"] and (datetime.datetime.utcnow()-row[2]).seconds>300):
-            log.error("Missed sequence or last message too old")
+        if row and ((row[1]+1)%10000000)!=int(headers["SequenceNumber"]):
+            log.error("Missing sequence ({}->{})".format(row[1], headers["SequenceNumber"]))
 
         message = zlib.decompress(message, zlib.MAX_WBITS | 32)
 
