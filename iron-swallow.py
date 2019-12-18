@@ -160,6 +160,12 @@ class Listener(stomp.ConnectionListener):
 
     def on_message(self, headers, message):
         c = self.cursor
+
+        c.execute("SELECT * FROM last_received_sequence;")
+        row = c.fetchone()
+        if not row or ((row[1]+1)%1000000!=headers["SequenceNumber"] and (datetime.datetime.utcnow()-row[2]).seconds>300):
+            log.error("Missed sequence or last message too old")
+
         message = zlib.decompress(message, zlib.MAX_WBITS | 32)
 
         parse(self.cursor, message)
@@ -168,7 +174,7 @@ class Listener(stomp.ConnectionListener):
         c.execute("""INSERT INTO last_received_sequence VALUES (0, %s, %s)
             ON CONFLICT (id)
             DO UPDATE SET sequence=EXCLUDED.sequence, time_acquired=EXCLUDED.time_acquired;""", (
-            headers["SequenceNumber"], datetime.datetime.now()))
+            headers["SequenceNumber"], datetime.datetime.utcnow()))
 
         c.execute("COMMIT;")
 
