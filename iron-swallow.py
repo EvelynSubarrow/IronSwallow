@@ -199,8 +199,8 @@ class Listener(stomp.ConnectionListener):
 
         c.execute("SELECT * FROM last_received_sequence;")
         row = c.fetchone()
-        if row and ((row[1]+1)%10000000)!=int(headers["SequenceNumber"]):
-            log.error("Missing sequence ({}->{})".format(row[1], headers["SequenceNumber"]))
+        if row and ((row[1]+5)%10000000)<=int(headers["SequenceNumber"]) < 10000000-5:
+            log.error("Skipped sequence count exceeds limit ({}->{})".format(row[1], headers["SequenceNumber"]))
 
         message = zlib.decompress(message, zlib.MAX_WBITS | 32)
 
