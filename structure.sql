@@ -34,6 +34,8 @@ CREATE TABLE darwin_schedule_locations(
     ptd                   TIMESTAMP DEFAULT NULL,
     wtd                   TIMESTAMP DEFAULT NULL,
 
+    original_wt           JSON NOT NULL,
+
     -- liveish data
     cancelled             BOOL NOT NULL DEFAULT FALSE,
     rdelay                SMALLINT NOT NULL DEFAULT 0,
@@ -56,13 +58,11 @@ CREATE TABLE darwin_schedule_status (
     rid                   CHAR(15) NOT NULL REFERENCES darwin_schedules(rid) ON DELETE CASCADE,
     tiploc                VARCHAR(7),
 
-    wta                   TIME DEFAULT NULL,
-    wtp                   TIME DEFAULT NULL,
-    wtd                   TIME DEFAULT NULL,
+    original_wt           JSON NOT NULL,
 
-    ta                    TIME DEFAULT NULL,
-    tp                    TIME DEFAULT NULL,
-    td                    TIME DEFAULT NULL,
+    ta                    TIMESTAMP DEFAULT NULL,
+    tp                    TIMESTAMP DEFAULT NULL,
+    td                    TIMESTAMP DEFAULT NULL,
 
     ta_source             VARCHAR DEFAULT NULL,
     tp_source             VARCHAR DEFAULT NULL,

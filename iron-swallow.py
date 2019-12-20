@@ -179,8 +179,10 @@ def parse(cursor, message):
                             time = datetime.datetime.combine(datetime.datetime.strptime(schedule["ssd"], "%Y-%m-%d").date(), time) + datetime.timedelta(days=ssd_offset)
                         times.append(time)
 
-                    c.execute("""INSERT INTO darwin_schedule_locations VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT DO NOTHING;""",
-                        (schedule["rid"], index, child_name, location["tpl"], location["act"], *times, location["can"], location.get("rdelay", 0)))
+                    original_wt = OrderedDict([(a, location.get(a, None)) for a in ["wta", "wtp", "wtd"]])
+
+                    c.execute("""INSERT INTO darwin_schedule_locations VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT DO NOTHING;""",
+                        (schedule["rid"], index, child_name, location["tpl"], location["act"], *times, json.dumps(original_wt), location["can"], location.get("rdelay", 0)))
 
                     index += 1
 
