@@ -34,12 +34,9 @@ CREATE TABLE darwin_schedule_locations(
     ptd                   TIMESTAMP DEFAULT NULL,
     wtd                   TIMESTAMP DEFAULT NULL,
 
-    -- live data
+    -- liveish data
     cancelled             BOOL NOT NULL DEFAULT FALSE,
     rdelay                SMALLINT NOT NULL DEFAULT 0,
-    live_arrival          JSON DEFAULT '{}',
-    live_departure        JSON DEFAULT '{}',
-    platform              JSON DEFAULT '{}',
 
     UNIQUE(rid, tiploc, wta, wtd, wtp)
 );
@@ -53,4 +50,41 @@ CREATE TABLE last_received_sequence (
     id SMALLINT NOT NULL UNIQUE,
     sequence INTEGER NOT NULL,
     time_acquired TIMESTAMP NOT NULL
-)
+);
+
+CREATE TABLE darwin_schedule_status (
+    rid                   CHAR(15) NOT NULL REFERENCES darwin_schedules(rid) ON DELETE CASCADE,
+    tiploc                VARCHAR(7),
+
+    wta                   TIME DEFAULT NULL,
+    wtp                   TIME DEFAULT NULL,
+    wtd                   TIME DEFAULT NULL,
+
+    ta                    TIME DEFAULT NULL,
+    tp                    TIME DEFAULT NULL,
+    td                    TIME DEFAULT NULL,
+
+    ta_source             VARCHAR DEFAULT NULL,
+    tp_source             VARCHAR DEFAULT NULL,
+    td_source             VARCHAR DEFAULT NULL,
+
+    ta_type               VARCHAR(1) DEFAULT NULL,
+    tp_type               VARCHAR(1) DEFAULT NULL,
+    td_type               VARCHAR(1) DEFAULT NULL,
+
+    plat                  VARCHAR DEFAULT NULL,
+    plat_suppressed       BOOL,
+    plat_cis_suppressed   BOOL,
+    plat_confirmed        BOOL,
+    plat_source           VARCHAR(1)
+);
+
+CREATE INDEX idx_sched_status_ta on darwin_schedule_status(ta);
+CREATE INDEX idx_sched_status_td on darwin_schedule_status(td);
+CREATE INDEX idx_sched_status_tp on darwin_schedule_status(tp);
+
+CREATE INDEX idx_sched_status_wta on darwin_schedule_status(wta);
+CREATE INDEX idx_sched_status_wtd on darwin_schedule_status(wtd);
+CREATE INDEX idx_sched_status_wtp on darwin_schedule_status(wtp);
+
+CREATE INDEX idx_sched_status_tiploc on darwin_schedule_status(tiploc);
