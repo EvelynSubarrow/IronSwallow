@@ -38,6 +38,13 @@ def compare_time(t1, t2):
     t1,t2 = [a.hour*3600+a.minute*60+a.second for a in (t1,t2)]
     return (Decimal(t1)-Decimal(t2))/3600
 
+def process_time(time):
+    if not time:
+        return None
+    if len(time)==5:
+        time += ":00"
+    return datetime.datetime.strptime(time, "%H:%M:%S").time()
+
 def strip_message(obj, l=0):
     out = obj
     if type(obj) in (dict,OrderedDict):
@@ -179,17 +186,50 @@ def parse(cursor, message):
                             time = datetime.datetime.combine(datetime.datetime.strptime(schedule["ssd"], "%Y-%m-%d").date(), time) + datetime.timedelta(days=ssd_offset)
                         times.append(time)
 
-                    original_wt = OrderedDict([(a, location.get(a, None)) for a in ["wta", "wtp", "wtd"]])
-
-                    c.execute("""INSERT INTO darwin_schedule_locations VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT DO NOTHING;""",
-                        (schedule["rid"], index, child_name, location["tpl"], location["act"], *times, json.dumps(original_wt), location["can"], location.get("rdelay", 0)))
+                    c.execute("""INSERT INTO darwin_schedule_locations VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT DO NOTHING;""",
+                        (schedule["rid"], index, child_name, location["tpl"], location["act"], *times, location["can"], location.get("rdelay", 0)))
 
                     index += 1
 
     if "TS" in parsed:
         for schedule in parsed["TS"]:
             for location in schedule["Location"]:
-                pass
+                working_times = [process_time(location.get(a)) for a in ("wta", "wtp", "wtd")]
+                c.execute("SELECT wtd,wtp,wta,index FROM darwin_schedule_locations WHERE (wtd::time=%s OR wtp::time=%s OR wta::time=%s) AND tiploc=%s;", (*working_times, location["tpl"]))
+                row = c.fetchone()
+                if row:
+                    times = []
+                    times_source = []
+                    times_type = []
+                    times_delay = []
+                    for i, time_d in enumerate([location.get(a, {}) for a in ["arr", "pass", "dep"]]):
+                        time_content = time_d.get("at",None) or time_d.get("et",None)
+                        time = None
+                        if time_content:
+                            time = process_time(time_content)
+
+                            # Crossed midnight, increment ssd offset
+                            if compare_time(time, row[i]) < -6:
+                                ssd_offset = 1
+                            # Normal increase or decrease, set offset to 0
+                            elif -6 <= compare_time(time, row[i]) <= +18:
+                                ssd_offset = 0
+                            # Back in time, crossed midnight (in reverse), decrement ssd offset
+                            elif +18 < compare_time(time, row[i]):
+                                ssd_offset = -1
+
+                            time = datetime.datetime.combine(row[i].date(), time) + datetime.timedelta(days=ssd_offset)
+                        times.append(time)
+                        times_source.append(time_d.get("src"))
+                        times_type.append("E"*("et" in time_d) or "A"*("at" in time_d) or None)
+                        times_delay.append(bool(time_d.get("delayed")))
+
+                    plat = location.get("plat", {})
+
+                    c.execute("INSERT INTO darwin_schedule_status VALUES (%s,%s,%s,  %s,%s,%s,  %s,%s,%s, %s,%s,%s, %s,%s,%s, %s,%s,%s,%s,%s) ON CONFLICT DO NOTHING;", (
+                    schedule["rid"], location["tpl"], row[3], *times, *times_source, *times_type, *times_delay,
+                    plat.get("$"), bool(plat.get("platsup")), bool(plat.get("cisPlatsup")), bool(plat.get("conf")), bool(plat.get("platsrc"))))
+
 
 class Listener(stomp.ConnectionListener):
     def __init__(self, mq, cursor):
@@ -198,6 +238,7 @@ class Listener(stomp.ConnectionListener):
 
     def on_message(self, headers, message):
         c = self.cursor
+        c.execute("BEGIN;")
 
         c.execute("SELECT * FROM last_received_sequence;")
         row = c.fetchone()

@@ -34,8 +34,6 @@ CREATE TABLE darwin_schedule_locations(
     ptd                   TIMESTAMP DEFAULT NULL,
     wtd                   TIMESTAMP DEFAULT NULL,
 
-    original_wt           JSON NOT NULL,
-
     -- liveish data
     cancelled             BOOL NOT NULL DEFAULT FALSE,
     rdelay                SMALLINT NOT NULL DEFAULT 0,
@@ -58,7 +56,7 @@ CREATE TABLE darwin_schedule_status (
     rid                   CHAR(15) NOT NULL REFERENCES darwin_schedules(rid) ON DELETE CASCADE,
     tiploc                VARCHAR(7),
 
-    original_wt           JSON NOT NULL,
+    location_index        SMALLINT,
 
     ta                    TIMESTAMP DEFAULT NULL,
     tp                    TIMESTAMP DEFAULT NULL,
@@ -72,19 +70,22 @@ CREATE TABLE darwin_schedule_status (
     tp_type               VARCHAR(1) DEFAULT NULL,
     td_type               VARCHAR(1) DEFAULT NULL,
 
+    ta_delayed            BOOL,
+    tp_delayed            BOOL,
+    td_delayed            BOOL,
+
     plat                  VARCHAR DEFAULT NULL,
     plat_suppressed       BOOL,
     plat_cis_suppressed   BOOL,
     plat_confirmed        BOOL,
-    plat_source           VARCHAR(1)
+    plat_source           VARCHAR,
+
+    UNIQUE(rid, tiploc, location_index)
 );
 
 CREATE INDEX idx_sched_status_ta on darwin_schedule_status(ta);
 CREATE INDEX idx_sched_status_td on darwin_schedule_status(td);
 CREATE INDEX idx_sched_status_tp on darwin_schedule_status(tp);
 
-CREATE INDEX idx_sched_status_wta on darwin_schedule_status(wta);
-CREATE INDEX idx_sched_status_wtd on darwin_schedule_status(wtd);
-CREATE INDEX idx_sched_status_wtp on darwin_schedule_status(wtp);
-
 CREATE INDEX idx_sched_status_tiploc on darwin_schedule_status(tiploc);
+CREATE INDEX idx_sched_status_index on darwin_schedule_status(location_index);
