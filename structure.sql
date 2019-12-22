@@ -53,7 +53,7 @@ CREATE TABLE last_received_sequence (
 );
 
 CREATE TABLE darwin_schedule_status (
-    rid                   CHAR(15) NOT NULL REFERENCES darwin_schedules(rid) ON DELETE CASCADE,
+    rid                   CHAR(15) NOT NULL,
     tiploc                VARCHAR(7),
 
     location_index        SMALLINT,

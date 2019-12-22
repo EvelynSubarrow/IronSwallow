@@ -7,6 +7,7 @@ from decimal import Decimal
 from collections import OrderedDict
 import lxml.etree as ElementTree
 
+import psycopg2
 import xmlschema
 import stomp
 
@@ -185,7 +186,6 @@ def parse(cursor, message):
                             last_time = time
                             time = datetime.datetime.combine(datetime.datetime.strptime(schedule["ssd"], "%Y-%m-%d").date(), time) + datetime.timedelta(days=ssd_offset)
                         times.append(time)
-
                     c.execute("""INSERT INTO darwin_schedule_locations VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT DO NOTHING;""",
                         (schedule["rid"], index, child_name, location["tpl"], location["act"], *times, location["can"], location.get("rdelay", 0)))
 
@@ -202,23 +202,28 @@ def parse(cursor, message):
                     times_source = []
                     times_type = []
                     times_delay = []
+                    # This serves a similar function to the last time above.
+                    # It's possible to have an estimate or report for a non-wt time
+                    alt_time = row[0] or row[1] or row[2]
                     for i, time_d in enumerate([location.get(a, {}) for a in ["arr", "pass", "dep"]]):
                         time_content = time_d.get("at",None) or time_d.get("et",None)
                         time = None
                         if time_content:
                             time = process_time(time_content)
+                            w_time = row[i] or alt_time
 
                             # Crossed midnight, increment ssd offset
-                            if compare_time(time, row[i]) < -6:
+                            if compare_time(time, w_time) < -6:
                                 ssd_offset = 1
                             # Normal increase or decrease, set offset to 0
-                            elif -6 <= compare_time(time, row[i]) <= +18:
+                            elif -6 <= compare_time(time, w_time) <= +18:
                                 ssd_offset = 0
                             # Back in time, crossed midnight (in reverse), decrement ssd offset
-                            elif +18 < compare_time(time, row[i]):
+                            elif +18 < compare_time(time, w_time):
                                 ssd_offset = -1
 
-                            time = datetime.datetime.combine(row[i].date(), time) + datetime.timedelta(days=ssd_offset)
+                            time = datetime.datetime.combine(w_time.date(), time) + datetime.timedelta(days=ssd_offset)
+
                         times.append(time)
                         times_source.append(time_d.get("src"))
                         times_type.append("E"*("et" in time_d) or "A"*("at" in time_d) or None)
@@ -227,9 +232,8 @@ def parse(cursor, message):
                     plat = location.get("plat", {})
 
                     c.execute("INSERT INTO darwin_schedule_status VALUES (%s,%s,%s,  %s,%s,%s,  %s,%s,%s, %s,%s,%s, %s,%s,%s, %s,%s,%s,%s,%s) ON CONFLICT DO NOTHING;", (
-                    schedule["rid"], location["tpl"], row[3], *times, *times_source, *times_type, *times_delay,
-                    plat.get("$"), bool(plat.get("platsup")), bool(plat.get("cisPlatsup")), bool(plat.get("conf")), bool(plat.get("platsrc"))))
-
+                        schedule["rid"], location["tpl"], row[3], *times, *times_source, *times_type, *times_delay,
+                        plat.get("$"), bool(plat.get("platsup")), bool(plat.get("cisPlatsup")), bool(plat.get("conf")), bool(plat.get("platsrc"))))
 
 class Listener(stomp.ConnectionListener):
     def __init__(self, mq, cursor):
