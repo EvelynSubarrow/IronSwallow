@@ -89,3 +89,18 @@ CREATE INDEX idx_sched_status_tp on darwin_schedule_status(tp);
 
 CREATE INDEX idx_sched_status_tiploc on darwin_schedule_status(tiploc);
 CREATE INDEX idx_sched_status_index on darwin_schedule_status(location_index);
+
+CREATE OR REPLACE FUNCTION purge_status() RETURNS trigger AS $$
+    BEGIN
+        DELETE FROM darwin_schedule_status WHERE darwin_schedule_status.rid=OLD.rid;
+        RETURN OLD;
+    END;
+    $$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_schedule_delete BEFORE DELETE ON darwin_schedules FOR EACH ROW
+    EXECUTE PROCEDURE purge_status();
+
+
+
+
+
