@@ -18,6 +18,7 @@ def station_board(cursor, tiplocs, intermediate_tiploc=None, passenger_only=True
     stat_select = ""
     for location_name, stat_name in [("base", "b_stat"), ("orig", "o_stat"), ("inter", "i_stat"), ("dest", "d_stat")]:
         stat_select += "{ln}.type, {ln}.tiploc, {ln}.activity, {ln}.wta, {ln}.wtp, {ln}.wtd, {ln}.pta, {ln}.ptd, {ln}.cancelled,\n".format(ln=location_name)
+        stat_select += "{sn}.plat, {sn}.plat_suppressed, {sn}.plat_cis_suppressed, {sn}.plat_confirmed, {sn}.plat_source,\n".format(sn=stat_name)
         for time_name in ("ta", "tp", "td"):
             stat_select += "{sn}.{tn}, {sn}.{tn}_source, {sn}.{tn}_type, {sn}.{tn}_delayed{comma}\n".format(
                 sn=stat_name, tn=time_name, comma=","*(not(stat_name=="d_stat" and time_name=="td")))
@@ -53,6 +54,16 @@ def station_board(cursor, tiplocs, intermediate_tiploc=None, passenger_only=True
         out_row = OrderedDict()
         for key in ["uid", "rid", "rsid", "ssd", "signalling_id", "status", "category", "operator", "is_active", "is_charter", "is_passenger"]:
             out_row[key] = row.pop()
+
+        for location_name in ("here", "origin", "intermediate", "destination"):
+        # "{ln}.type, {ln}.tiploc, {ln}.activity, {ln}.wta, {ln}.wtp, {ln}.wtd, {ln}.pta, {ln}.ptd, {ln}.cancelled,\n"
+            out_row[location_name] = OrderedDict([(a,row.pop()) for a in ("type","tiploc","activity","wta","wtp","wtd","pta","ptd", "cancelled")])
+            out_row[location_name]["platform"] = OrderedDict(
+                [(a, row.pop()) for a in ("platform", "suppressed", "cis_suppressed", "confirmed", "source")])
+            for time_name in ("ta", "tp", "td"):
+                for n in range(4):
+                    row.pop()
+
         services.append(out_row)
 
     return services
