@@ -9,7 +9,7 @@ def json_default(value):
     elif isinstance(value, datetime.date):
         return value.isoformat()
     else:
-        raise ValueError
+        raise ValueError(type(value))
 
 def _location_outline(target_list):
     pass
