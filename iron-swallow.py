@@ -92,11 +92,13 @@ def incorporate_ftp(c):
                 ftp.retrbinary("RETR {}".format(file), read_buffer.extend)
                 actual_files.append((file, read_buffer))
 
-            for file, contents in actual_files:
+            while actual_files:
+                file, contents = actual_files[0]
                 log.info("Parsing retrieved file {}".format(file))
                 for line in gzip.decompress(contents).split(b"\n"):
                     if line:
                         parse(c, line)
+                del actual_files[0]
 
             return
         except AssertionError as e:
