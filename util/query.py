@@ -33,7 +33,7 @@ def station_board(cursor, tiplocs, base_dt=None, intermediate_tiploc=None, passe
 
         LEFT JOIN darwin_schedule_locations AS dest ON base.rid=dest.rid AND dest.type='DT'
         LEFT JOIN darwin_schedule_locations AS orig ON base.rid=orig.rid AND orig.type='OR'
-        LEFT JOIN darwin_schedule_locations AS inter ON base.rid=inter.rid AND inter.type!='PP'
+        LEFT JOIN darwin_schedule_locations AS inter ON base.rid=inter.rid AND inter.type!='PP' AND inter.tiploc=%s
 
         LEFT JOIN darwin_schedule_status AS o_stat ON orig.rid=o_stat.rid AND orig.original_wt=o_stat.original_wt
         LEFT JOIN darwin_schedule_status AS b_stat ON base.rid=b_stat.rid AND base.original_wt=b_stat.original_wt
@@ -46,7 +46,7 @@ def station_board(cursor, tiplocs, base_dt=None, intermediate_tiploc=None, passe
         AND NOT sch.is_deleted
         AND base.wtd >= %s
         ORDER BY base.wtd;""".format(stat_select), (
-        tiplocs, base_dt))
+        intermediate_tiploc, tiplocs, base_dt))
 
     services = []
 
@@ -58,10 +58,15 @@ def station_board(cursor, tiplocs, base_dt=None, intermediate_tiploc=None, passe
             out_row[key] = row.pop()
 
         for location_name in ("here", "origin", "intermediate", "destination"):
-        # "{ln}.type, {ln}.tiploc, {ln}.activity, {ln}.wta, {ln}.wtp, {ln}.wtd, {ln}.pta, {ln}.ptd, {ln}.cancelled,\n"
             out_row[location_name] = OrderedDict([(a,row.pop()) for a in ("type","tiploc","activity","wta","wtp","wtd","pta","ptd", "cancelled")])
-            out_row[location_name]["platform"] = OrderedDict(
+
+            platform = OrderedDict(
                 [(a, row.pop()) for a in ("platform", "suppressed", "cis_suppressed", "confirmed", "source")])
+            platform["formatted"] = None
+            if platform["platform"]:
+                platform["formatted"] = "*"*platform["suppressed"] + platform["platform"] + "."*platform["confirmed"]
+            out_row[location_name]["platform"] = platform
+
             for time_name in ("ta", "tp", "td"):
                 for n in range(4):
                     row.pop()
