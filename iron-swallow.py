@@ -173,7 +173,7 @@ def parse(cursor, message):
         if record["tag"]=="TS":
             for location in record["list"]:
                 original_wt = form_original_wt([process_time(location.get(a)) for a in ("wta", "wtp", "wtd")])
-                if location["tag"]=="location":
+                if location["tag"]=="Location":
                     times = []
                     times_source = []
                     times_type = []
