@@ -1,2 +1,2 @@
 stomp.py
-xmlschema
+psycopg2

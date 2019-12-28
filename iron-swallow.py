@@ -5,13 +5,12 @@ from ftplib import FTP
 from time import sleep
 from decimal import Decimal
 from collections import OrderedDict
-import lxml.etree as ElementTree
 
 import psycopg2
-import xmlschema
 import stomp
 
 from util import database
+from util import pushport
 
 fh = logging.FileHandler('logs/swallow.log')
 ch = logging.StreamHandler()
@@ -26,9 +25,6 @@ format = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s
 for handler in (ch,fh):
     handler.setFormatter(format)
     log.addHandler(handler)
-
-SCHEMA = xmlschema.XMLSchema("ppv16/rttiPPTSchema_v16.xsd")
-SCHEMA_SCHEDULE = xmlschema.XMLSchema("ppv16/rttiPPTSchedules_v3.xsd")
 
 with open("secret.json") as f:
     SECRET = json.load(f)
@@ -46,27 +42,13 @@ def process_time(time):
         time += ":00"
     return datetime.datetime.strptime(time, "%H:%M:%S").time()
 
-def strip_message(obj, l=0):
-    out = obj
-    if type(obj) in (dict,OrderedDict):
-        out = type(obj)()
-        for key,value in obj.items():
-            new_key = key.split(":")[-1].lstrip("@")
-
-            if l==0 and new_key.startswith("ns") or new_key.startswith("xmlns") or new_key.startswith("rtti"):
-                pass
-            elif type(value) in (list, dict, OrderedDict):
-                out[new_key] = strip_message(value, l+1)
-            else:
-                out[new_key] = value
-    elif type(obj) in (list,):
-        out = type(obj)()
-        for item in obj:
-            if type(item) in (list, dict, OrderedDict):
-                out.append(strip_message(item, l+1))
-            else:
-                out.append(item)
-
+def form_original_wt(times):
+    out = ""
+    for time in times:
+        if time:
+            out += time.strftime("%H%M%S")
+        else:
+            out += "      "
     return out
 
 def incorporate_ftp(c):
@@ -94,10 +76,12 @@ def incorporate_ftp(c):
 
             while actual_files:
                 file, contents = actual_files[0]
-                log.info("Parsing retrieved file {}".format(file))
-                for line in gzip.decompress(contents).split(b"\n"):
+                log.info("Enqueueing retrieved file {}".format(file))
+                lines = gzip.decompress(contents).split(b"\n")
+                for line in lines:
                     if line:
                         parse(c, line)
+                del lines
                 del actual_files[0]
 
             return
@@ -136,37 +120,27 @@ def connect_and_subscribe(mq):
 def parse(cursor, message):
     c = cursor
 
-    tree = ElementTree.fromstring(message)
+    parsed = pushport.PushPortParser().parse(io.StringIO(message.decode("utf8")))["Pport"].get("uR", {})
 
-    parsed = SCHEMA.to_dict(tree)
-    parsed = strip_message(parsed)
-    parsed = parsed.get("uR", {})
-
-    if "schedule" in parsed:
-        for schedule in parsed.get("schedule", []): pass
-
-        for schedule_tree in tree.find("{http://www.thalesgroup.com/rtti/PushPort/v16}uR").findall("{http://www.thalesgroup.com/rtti/PushPort/v16}schedule"):
-            schedule = OrderedDict(SCHEMA_SCHEDULE.types["Schedule"].decode(schedule_tree)[2])
-
+    for record in parsed.get("list", []):
+        if record["tag"]=="schedule":
             c.execute("""INSERT INTO darwin_schedules VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 ON CONFLICT (rid) DO UPDATE SET
                 signalling_id=EXCLUDED.signalling_id, status=EXCLUDED.status, category=EXCLUDED.category,
                 operator=EXCLUDED.operator, is_active=EXCLUDED.is_active, is_charter=EXCLUDED.is_charter,
                 is_deleted=EXCLUDED.is_deleted, is_passenger=EXCLUDED.is_passenger;""", (
-                schedule["uid"], schedule["rid"], schedule.get("rsid"), schedule["ssd"], schedule["trainId"],
-                schedule["status"], schedule["trainCat"], schedule["toc"], schedule["isActive"],
-                schedule["isCharter"], schedule["deleted"], schedule["isPassengerSvc"],
+                record["uid"], record["rid"], record.get("rsid"), record["ssd"], record["trainId"],
+                record.get("status") or "P", record.get("trainCat") or "OO", record["toc"], record.get("isActive") or True,
+                bool(record.get("isCharter")), bool(record.get("deleted")), record.get("isPassengerSvc") or True,
                 ))
 
             index = 0
             last_time, ssd_offset = None, 0
 
-            c.execute("DELETE FROM darwin_schedule_locations WHERE rid=%s;", (schedule["rid"],))
+            c.execute("DELETE FROM darwin_schedule_locations WHERE rid=%s;", (record["rid"],))
 
-            for child in schedule_tree.getchildren():
-                child_name = ElementTree.QName(child).localname
-                if child_name in ["OPOR", "OR", "OPIP", "IP", "PP", "DT", "OPDT"]:
-                    location = OrderedDict(SCHEMA_SCHEDULE.types[child_name].decode(child)[2])
+            for location in record["list"]:
+                if location["tag"] in ["OPOR", "OR", "OPIP", "IP", "PP", "DT", "OPDT"]:
 
                     times = []
                     for time_n, time in [(a, location.get(a, None)) for a in ["pta", "wta", "wtp", "ptd", "wtd"]]:
@@ -186,45 +160,30 @@ def parse(cursor, message):
                                 ssd_offset -= 1
 
                             last_time = time
-                            time = datetime.datetime.combine(datetime.datetime.strptime(schedule["ssd"], "%Y-%m-%d").date(), time) + datetime.timedelta(days=ssd_offset)
+                            time = datetime.datetime.combine(datetime.datetime.strptime(record["ssd"], "%Y-%m-%d").date(), time) + datetime.timedelta(days=ssd_offset)
                         times.append(time)
-                    c.execute("""INSERT INTO darwin_schedule_locations VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT DO NOTHING;""",
-                        (schedule["rid"], index, child_name, location["tpl"], location["act"], *times, location["can"], location.get("rdelay", 0)))
+
+                    original_wt = form_original_wt([process_time(location.get(a)) for a in ("wta", "wtp", "wtd")])
+
+                    c.execute("""INSERT INTO darwin_schedule_locations VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT DO NOTHING;""",
+                        (record["rid"], index, location["tag"], location["tpl"], location.get("act", ''), original_wt, *times, bool(location.get("can")), location.get("rdelay", 0)))
 
                     index += 1
 
-    if "TS" in parsed:
-        for schedule in parsed["TS"]:
-            for location in schedule["Location"]:
-                working_times = [process_time(location.get(a)) for a in ("wta", "wtp", "wtd")]
-                c.execute("SELECT wtd,wtp,wta,index FROM darwin_schedule_locations WHERE (wtd::time=%s OR wtp::time=%s OR wta::time=%s) AND tiploc=%s;", (*working_times, location["tpl"]))
-                row = c.fetchone()
-                if row:
+        if record["tag"]=="TS":
+            for location in record["list"]:
+                original_wt = form_original_wt([process_time(location.get(a)) for a in ("wta", "wtp", "wtd")])
+                if location["tag"]=="location":
                     times = []
                     times_source = []
                     times_type = []
                     times_delay = []
-                    # This serves a similar function to the last time above.
-                    # It's possible to have an estimate or report for a non-wt time
-                    alt_time = row[0] or row[1] or row[2]
+
                     for i, time_d in enumerate([location.get(a, {}) for a in ["arr", "pass", "dep"]]):
                         time_content = time_d.get("at",None) or time_d.get("et",None)
                         time = None
                         if time_content:
                             time = process_time(time_content)
-                            w_time = row[i] or alt_time
-
-                            # Crossed midnight, increment ssd offset
-                            if compare_time(time, w_time) < -6:
-                                ssd_offset = 1
-                            # Normal increase or decrease, set offset to 0
-                            elif -6 <= compare_time(time, w_time) <= +18:
-                                ssd_offset = 0
-                            # Back in time, crossed midnight (in reverse), decrement ssd offset
-                            elif +18 < compare_time(time, w_time):
-                                ssd_offset = -1
-
-                            time = datetime.datetime.combine(w_time.date(), time) + datetime.timedelta(days=ssd_offset)
 
                         times.append(time)
                         times_source.append(time_d.get("src"))
@@ -232,9 +191,8 @@ def parse(cursor, message):
                         times_delay.append(bool(time_d.get("delayed")))
 
                     plat = location.get("plat", {})
-
                     c.execute("INSERT INTO darwin_schedule_status VALUES (%s,%s,%s,  %s,%s,%s,  %s,%s,%s, %s,%s,%s, %s,%s,%s, %s,%s,%s,%s,%s) ON CONFLICT DO NOTHING;", (
-                        schedule["rid"], location["tpl"], row[3], *times, *times_source, *times_type, *times_delay,
+                        record["rid"], location["tpl"], original_wt, *times, *times_source, *times_type, *times_delay,
                         plat.get("$"), bool(plat.get("platsup")), bool(plat.get("cisPlatsup")), bool(plat.get("conf")), bool(plat.get("platsrc"))))
 
 class Listener(stomp.ConnectionListener):
