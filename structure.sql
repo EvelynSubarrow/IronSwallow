@@ -28,6 +28,8 @@ CREATE TABLE darwin_schedule_locations(
     tiploc                VARCHAR(7)  NOT NULL,
     activity              VARCHAR(12) NOT NULL,
 
+    original_wt           VARCHAR(18),
+
     pta                   TIMESTAMP DEFAULT NULL,
     wta                   TIMESTAMP DEFAULT NULL,
     wtp                   TIMESTAMP DEFAULT NULL,
@@ -56,11 +58,11 @@ CREATE TABLE darwin_schedule_status (
     rid                   CHAR(15) NOT NULL,
     tiploc                VARCHAR(7),
 
-    location_index        SMALLINT,
+    original_wt           VARCHAR(18),
 
-    ta                    TIMESTAMP DEFAULT NULL,
-    tp                    TIMESTAMP DEFAULT NULL,
-    td                    TIMESTAMP DEFAULT NULL,
+    ta                    TIME DEFAULT NULL,
+    tp                    TIME DEFAULT NULL,
+    td                    TIME DEFAULT NULL,
 
     ta_source             VARCHAR DEFAULT NULL,
     tp_source             VARCHAR DEFAULT NULL,
@@ -80,7 +82,7 @@ CREATE TABLE darwin_schedule_status (
     plat_confirmed        BOOL,
     plat_source           VARCHAR,
 
-    UNIQUE(rid, tiploc, location_index)
+    UNIQUE(rid, tiploc, original_wt)
 );
 
 CREATE INDEX idx_sched_status_ta on darwin_schedule_status(ta);
