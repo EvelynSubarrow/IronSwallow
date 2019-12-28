@@ -14,7 +14,7 @@ def json_default(value):
 def _location_outline(target_list):
     pass
 
-def station_board(cursor, tiplocs, intermediate_tiploc=None, passenger_only=True):
+def station_board(cursor, tiplocs, base_dt=None, intermediate_tiploc=None, passenger_only=True):
     stat_select = ""
     for location_name, stat_name in [("base", "b_stat"), ("orig", "o_stat"), ("inter", "i_stat"), ("dest", "d_stat")]:
         stat_select += "{ln}.type, {ln}.tiploc, {ln}.activity, {ln}.wta, {ln}.wtp, {ln}.wtd, {ln}.pta, {ln}.ptd, {ln}.cancelled,\n".format(ln=location_name)
@@ -35,16 +35,18 @@ def station_board(cursor, tiplocs, intermediate_tiploc=None, passenger_only=True
         LEFT JOIN darwin_schedule_locations AS orig ON base.rid=orig.rid AND orig.type='OR'
         LEFT JOIN darwin_schedule_locations AS inter ON base.rid=inter.rid AND inter.type!='PP'
 
-        LEFT JOIN darwin_schedule_status AS o_stat ON orig.rid=o_stat.rid AND orig.tiploc=o_stat.tiploc
-        LEFT JOIN darwin_schedule_status AS b_stat ON base.rid=b_stat.rid AND base.tiploc=b_stat.tiploc
-        LEFT JOIN darwin_schedule_status AS i_stat ON inter.rid=i_stat.rid AND inter.tiploc=i_stat.tiploc
-        LEFT JOIN darwin_schedule_status AS d_stat ON dest.rid=d_stat.rid AND dest.tiploc=d_stat.tiploc
+        LEFT JOIN darwin_schedule_status AS o_stat ON orig.rid=o_stat.rid AND orig.original_wt=o_stat.original_wt
+        LEFT JOIN darwin_schedule_status AS b_stat ON base.rid=b_stat.rid AND base.original_wt=b_stat.original_wt
+        LEFT JOIN darwin_schedule_status AS i_stat ON inter.rid=i_stat.rid AND inter.original_wt=i_stat.original_wt
+        LEFT JOIN darwin_schedule_status AS d_stat ON dest.rid=d_stat.rid AND dest.original_wt=d_stat.original_wt
 
         WHERE base.wtd IS NOT NULL
         AND base.tiploc in %s
         AND base.type in ('IP', 'DT', 'OR')
-        AND NOT sch.is_deleted ORDER BY base.wtd;""".format(stat_select), (
-        tiplocs,))
+        AND NOT sch.is_deleted
+        AND base.wtd >= %s
+        ORDER BY base.wtd;""".format(stat_select), (
+        tiplocs, base_dt))
 
     services = []
 
