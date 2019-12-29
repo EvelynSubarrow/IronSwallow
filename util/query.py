@@ -8,6 +8,8 @@ def json_default(value):
         return value.isoformat()
     elif isinstance(value, datetime.date):
         return value.isoformat()
+    elif isinstance(value, datetime.time):
+        return value.isoformat()
     else:
         raise ValueError(type(value))
 
