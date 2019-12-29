@@ -37,8 +37,7 @@ def location_dict(row):
     out_row["platform"] = platform
 
     for time_name in ("ta", "tp", "td"):
-        for n in range(4):
-            row.pop()
+        out_row[time_name] = OrderedDict([(a, row.pop()) for a in ("time", "source", "type", "delayed")])
 
     return out_row
 
