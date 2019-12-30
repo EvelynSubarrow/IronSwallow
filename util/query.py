@@ -1,5 +1,6 @@
 import datetime
 from collections import OrderedDict
+from decimal import Decimal
 
 from util import database
 
@@ -13,13 +14,41 @@ def json_default(value):
     else:
         raise ValueError(type(value))
 
-def _location_outline(target_list):
-    pass
+def process_datetime(dt):
+    if dt:
+        out = OrderedDict()
+        out["iso"] = dt
+        out["ut"] = int(dt.timestamp())
+        return out
+    else:
+        return None
+
+def compare_time(t1, t2):
+    if not (t1 and t2):
+        return 0
+    t1,t2 = [a.hour*3600+a.minute*60+a.second for a in (t1,t2)]
+    return (Decimal(t1)-Decimal(t2))/3600
+
+def combine_darwin_time(working_time, darwin_time):
+    if not working_time:
+        return None
+
+    # Crossed midnight, increment ssd offset
+    if compare_time(darwin_time, working_time) < -6:
+        ssd_offset = +1
+    # Normal increase or decrease, nothing we really need to do here
+    elif -6 <= compare_time(darwin_time, working_time) <= +18:
+        ssd_offset = 0
+    # Back in time, crossed midnight (in reverse), decrement ssd offset
+    elif +18 < compare_time(darwin_time, working_time):
+        ssd_offset = -1
+
+    return datetime.datetime.combine(working_time.date(), darwin_time) + datetime.timedelta(days=ssd_offset)
 
 def form_location_select(names):
     stat_select = ""
     for location_name, stat_name in names:
-        stat_select += "{ln}.type, {ln}.tiploc, {ln}.activity, {ln}.wta, {ln}.wtp, {ln}.wtd, {ln}.pta, {ln}.ptd, {ln}.cancelled,\n".format(ln=location_name)
+        stat_select += "{ln}.type, {ln}.tiploc, {ln}.activity, {ln}.cancelled, {ln}.wta, {ln}.pta, {ln}.wtp, NULL, {ln}.wtd, {ln}.ptd,\n".format(ln=location_name)
         stat_select += "{sn}.plat, {sn}.plat_suppressed, {sn}.plat_cis_suppressed, {sn}.plat_confirmed, {sn}.plat_source,\n".format(sn=stat_name)
         for time_name in ("ta", "tp", "td"):
             stat_select += "{sn}.{tn}, {sn}.{tn}_source, {sn}.{tn}_type, {sn}.{tn}_delayed{comma}\n".format(
@@ -27,7 +56,13 @@ def form_location_select(names):
     return stat_select
 
 def location_dict(row):
-    out_row = OrderedDict([(a,row.pop()) for a in ("type","tiploc","activity","wta","wtp","wtd","pta","ptd", "cancelled")])
+    out_row = OrderedDict([(a,row.pop()) for a in ("type","tiploc","activity","cancelled")])
+    out_row["times"] = OrderedDict()
+
+    for time_name in ("arrival", "pass", "departure"):
+        out_row["times"][time_name] = OrderedDict([(a,process_datetime(row.pop())) for a in ("working", "public")])
+        out_row["times"][time_name]["estimated"] = None
+        out_row["times"][time_name]["actual"] = None
 
     platform = OrderedDict(
         [(a, row.pop()) for a in ("platform", "suppressed", "cis_suppressed", "confirmed", "source")])
@@ -36,8 +71,16 @@ def location_dict(row):
         platform["formatted"] = "*"*platform["suppressed"] + platform["platform"] + "."*platform["confirmed"]
     out_row["platform"] = platform
 
-    for time_name in ("ta", "tp", "td"):
-        out_row[time_name] = OrderedDict([(a, row.pop()) for a in ("time", "source", "type", "delayed")])
+    for time_name in ("arrival", "pass", "departure"):
+        darwin_time = OrderedDict([(a, row.pop()) for a in ("time", "source", "type", "delayed")])
+        #full_dt = process_datetime(combine_darwin_time(out_row["times"][time_name].get("working", {}).get("iso"), darwin_time["time"]))
+
+        if darwin_time["type"]=="A":
+            out_row["times"][time_name]["actual"] = darwin_time
+            #out_row["times"][time_name]["actual"].update(full_dt)
+        elif darwin_time["type"]=="E":
+            out_row["times"][time_name]["estimated"] = darwin_time
+            #out_row["times"][time_name]["estimated"].update(full_dt)
 
     return out_row
 
