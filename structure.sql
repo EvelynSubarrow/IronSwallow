@@ -90,7 +90,7 @@ CREATE INDEX idx_sched_status_td on darwin_schedule_status(td);
 CREATE INDEX idx_sched_status_tp on darwin_schedule_status(tp);
 
 CREATE INDEX idx_sched_status_tiploc on darwin_schedule_status(tiploc);
-CREATE INDEX idx_sched_status_index on darwin_schedule_status(location_index);
+CREATE INDEX idx_sched_status_index on darwin_schedule_status(original_wt);
 
 CREATE OR REPLACE FUNCTION purge_status() RETURNS trigger AS $$
     BEGIN
@@ -102,7 +102,15 @@ CREATE OR REPLACE FUNCTION purge_status() RETURNS trigger AS $$
 CREATE TRIGGER trigger_schedule_delete BEFORE DELETE ON darwin_schedules FOR EACH ROW
     EXECUTE PROCEDURE purge_status();
 
+CREATE TABLE darwin_locations (
+    tiploc                VARCHAR(7) NOT NULL,
+    crs                   VARCHAR(3),
+    operator              VARCHAR(2),
+    name                  VARCHAR,
 
+    dict                  JSON,
 
+    UNIQUE(tiploc)
+);
 
-
+CREATE INDEX idx_location_tiploc on darwin_locations(tiploc);
