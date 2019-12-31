@@ -21,7 +21,7 @@ def process_datetime(dt):
         out["ut"] = int(dt.timestamp())
         return out
     else:
-        return None
+        return OrderedDict()
 
 def compare_time(t1, t2):
     if not (t1 and t2):
@@ -73,14 +73,17 @@ def location_dict(row):
 
     for time_name in ("arrival", "pass", "departure"):
         darwin_time = OrderedDict([(a, row.pop()) for a in ("time", "source", "type", "delayed")])
-        #full_dt = process_datetime(combine_darwin_time(out_row["times"][time_name].get("working", {}).get("iso"), darwin_time["time"]))
+        working_time = out_row["times"][time_name].get("working").get("iso")
+
+        if darwin_time["time"] and working_time:
+            full_dt = process_datetime(combine_darwin_time(working_time, darwin_time["time"]))
 
         if darwin_time["type"]=="A":
             out_row["times"][time_name]["actual"] = darwin_time
-            #out_row["times"][time_name]["actual"].update(full_dt)
+            out_row["times"][time_name]["actual"].update(full_dt)
         elif darwin_time["type"]=="E":
             out_row["times"][time_name]["estimated"] = darwin_time
-            #out_row["times"][time_name]["estimated"].update(full_dt)
+            out_row["times"][time_name]["estimated"].update(full_dt)
 
     return out_row
 
