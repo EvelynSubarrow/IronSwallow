@@ -2,7 +2,7 @@ import io, xml.sax
 from collections import OrderedDict
 
 class PushPortParser(xml.sax.ContentHandler):
-    def __init__(self, list_paths=["Pport.uR", "Pport.uR.schedule", "Pport.uR.TS"], strip_whitespace=True):
+    def __init__(self, list_paths=["Pport.uR", "Pport.uR.schedule", "Pport.uR.TS", "PportTimetableRef"], strip_whitespace=True):
         self._path = []
         self._root = OrderedDict()
         self._dicts = [self._root]
