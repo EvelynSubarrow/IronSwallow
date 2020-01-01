@@ -6,6 +6,7 @@ from time import sleep
 from decimal import Decimal
 from collections import OrderedDict
 
+import boto3
 import psycopg2
 import stomp
 
@@ -50,6 +51,30 @@ def form_original_wt(times):
         else:
             out += "      "
     return out
+
+def incorporate_reference_data(c):
+    client = boto3.client('s3', aws_access_key_id=SECRET["s3-access"], aws_secret_access_key=SECRET["s3-secret"])
+    obj_list = client.list_objects(Bucket="darwin.xmltimetable")["Contents"]
+    obj_list = [a for a in obj_list if "ref" in a["Key"]]
+    stream = client.get_object(Bucket="darwin.xmltimetable", Key=obj_list[-1]["Key"])["Body"]
+
+    parsed = pushport.PushPortParser().parse(io.StringIO(gzip.decompress(stream.read()).decode("utf8")))
+
+    for reference in parsed["PportTimetableRef"]["list"]:
+        if reference["tag"]=="LocationRef":
+            loc = OrderedDict([
+                ("tiploc", reference["tpl"]),
+                ("crs", reference.get("crs")),
+                ("operator", reference.get("toc")),
+                ("name", reference["locname"]*(reference["locname"]!=reference["tpl"]) or None),
+                ])
+
+            c.execute("""INSERT INTO darwin_locations VALUES (%s, %s, %s, %s, %s)
+                ON CONFLICT(tiploc) DO UPDATE SET (tiploc,crs,operator,name,dict)=
+                (EXCLUDED.tiploc,EXCLUDED.crs,EXCLUDED.operator,EXCLUDED.name,EXCLUDED.dict);
+                """, (loc["tiploc"], loc["crs"], loc["operator"], loc["name"], json.dumps(loc)))
+
+    c.execute("COMMIT;")
 
 def incorporate_ftp(c):
     ftp = FTP(SECRET["ftp-hostname"])
@@ -241,6 +266,9 @@ mq = stomp.Connection([(SECRET["hostname"], 61613)],
 with database.DatabaseConnection() as db_connection, db_connection.new_cursor() as cursor:
     cursor.execute("SELECT * FROM last_received_sequence;")
     row = cursor.fetchone()
+
+    incorporate_reference_data(cursor)
+
     if not row or (datetime.datetime.utcnow()-row[2]).seconds > 300:
         log.info("Last retrieval too old, using FTP snapshots")
         incorporate_ftp(cursor)
