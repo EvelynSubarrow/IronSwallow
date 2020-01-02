@@ -104,9 +104,13 @@ CREATE TRIGGER trigger_schedule_delete BEFORE DELETE ON darwin_schedules FOR EAC
 
 CREATE TABLE darwin_locations (
     tiploc                VARCHAR(7) NOT NULL,
-    crs                   VARCHAR(3),
+    crs_darwin            VARCHAR(3),
+    crs_corpus            VARCHAR(3),
     operator              VARCHAR(2),
-    name                  VARCHAR,
+    name_darwin           VARCHAR,
+    name_corpus           VARCHAR,
+    name_short            VARCHAR,
+    name_full             VARCHAR,
 
     dict                  JSON,
 
