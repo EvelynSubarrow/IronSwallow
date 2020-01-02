@@ -53,6 +53,13 @@ def form_original_wt(times):
     return out
 
 def incorporate_reference_data(c):
+    strip = lambda x: x.rstrip() or None if x else None
+    case = lambda x: x.title() if x else x
+
+    with open("datasets/corpus.json", encoding="iso-8859-1") as f:
+        corpus = json.load(f)["TIPLOCDATA"]
+    corpus = {a["TIPLOC"]: a for a in corpus}
+
     client = boto3.client('s3', aws_access_key_id=SECRET["s3-access"], aws_secret_access_key=SECRET["s3-secret"])
     obj_list = client.list_objects(Bucket="darwin.xmltimetable")["Contents"]
     obj_list = [a for a in obj_list if "ref" in a["Key"]]
@@ -62,17 +69,29 @@ def incorporate_reference_data(c):
 
     for reference in parsed["PportTimetableRef"]["list"]:
         if reference["tag"]=="LocationRef":
+            corpus_loc = corpus.get(reference["tpl"], {})
+
             loc = OrderedDict([
                 ("tiploc", reference["tpl"]),
-                ("crs", reference.get("crs")),
+                ("crs_darwin", reference.get("crs")),
+                ("crs_corpus", strip(corpus_loc.get("3ALPHA"))),
                 ("operator", reference.get("toc")),
-                ("name", reference["locname"]*(reference["locname"]!=reference["tpl"]) or None),
+                ("name_darwin", reference["locname"]*(reference["locname"]!=reference["tpl"]) or None),
+                ("name_corpus", case(strip(corpus_loc.get("NLCDESC")))),
                 ])
+            loc.update(OrderedDict([
+                ("name_short",loc["name_corpus"] or loc["name_darwin"]),
+                ("name_full", loc["name_darwin"] or loc["name_corpus"]),
+                ]))
 
-            c.execute("""INSERT INTO darwin_locations VALUES (%s, %s, %s, %s, %s)
-                ON CONFLICT(tiploc) DO UPDATE SET (tiploc,crs,operator,name,dict)=
-                (EXCLUDED.tiploc,EXCLUDED.crs,EXCLUDED.operator,EXCLUDED.name,EXCLUDED.dict);
-                """, (loc["tiploc"], loc["crs"], loc["operator"], loc["name"], json.dumps(loc)))
+            c.execute("""INSERT INTO darwin_locations VALUES (%s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT(tiploc) DO UPDATE SET
+                (tiploc,crs_darwin,crs_corpus,operator,name_short,name_full,dict)=
+                (EXCLUDED.tiploc,EXCLUDED.crs_darwin,EXCLUDED.crs_corpus,EXCLUDED.operator,
+                EXCLUDED.name_short,EXCLUDED.name_full,EXCLUDED.dict);
+                """, (loc["tiploc"], loc["crs_darwin"], loc["crs_corpus"], loc["operator"],
+                    loc["name_short"], loc["name_full"],
+                    json.dumps(loc)))
 
     c.execute("COMMIT;")
 
@@ -277,4 +296,5 @@ with database.DatabaseConnection() as db_connection, db_connection.new_cursor() 
     connect_and_subscribe(mq)
 
     while True:
-        sleep(1)
+        sleep(3600*12)
+        incorporate_reference_data(cursor)
