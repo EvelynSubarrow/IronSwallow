@@ -107,8 +107,6 @@ CREATE TABLE darwin_locations (
     crs_darwin            VARCHAR(3),
     crs_corpus            VARCHAR(3),
     operator              VARCHAR(2),
-    name_darwin           VARCHAR,
-    name_corpus           VARCHAR,
     name_short            VARCHAR,
     name_full             VARCHAR,
 
