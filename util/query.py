@@ -107,7 +107,7 @@ def station_board(cursor, locations, base_dt=None, intermediate_tiploc=None, pas
         AND NOT sch.is_deleted
         AND base.wtd >= %s
         ORDER BY base.wtd
-        LIMIT 50;""".format(stat_select), (
+        LIMIT 15;""".format(stat_select), (
         intermediate_tiploc, *[locations]*2, base_dt))
 
     services = []
