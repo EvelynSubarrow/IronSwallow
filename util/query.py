@@ -15,13 +15,7 @@ def json_default(value):
         raise ValueError(type(value))
 
 def process_datetime(dt):
-    if dt:
-        out = OrderedDict()
-        out["iso"] = dt
-        out["ut"] = int(dt.timestamp())
-        return out
-    else:
-        return OrderedDict()
+    return dt or None
 
 def compare_time(t1, t2):
     if not (t1 and t2):
@@ -64,30 +58,24 @@ def location_dict(row):
         out_row["times"][time_name]["estimated"] = None
         out_row["times"][time_name]["actual"] = None
 
-    platform = OrderedDict(
+    out_row["platform"] = OrderedDict(
         [(a, row.pop()) for a in ("platform", "suppressed", "cis_suppressed", "confirmed", "source")])
-    platform["formatted"] = None
-    if platform["platform"]:
-        platform["formatted"] = "*"*platform["suppressed"] + platform["platform"] + "."*platform["confirmed"]
-    out_row["platform"] = platform
 
     for time_name in ("arrival", "pass", "departure"):
         darwin_time = OrderedDict([(a, row.pop()) for a in ("time", "source", "type", "delayed")])
-        working_time = out_row["times"][time_name].get("working").get("iso")
+        working_time = out_row["times"][time_name]["working"]
 
         if darwin_time["time"] and working_time:
             full_dt = process_datetime(combine_darwin_time(working_time, darwin_time["time"]))
 
         if darwin_time["type"]=="A":
-            out_row["times"][time_name]["actual"] = darwin_time
-            out_row["times"][time_name]["actual"].update(full_dt)
+            out_row["times"][time_name]["actual"] = full_dt
         elif darwin_time["type"]=="E":
-            out_row["times"][time_name]["estimated"] = darwin_time
-            out_row["times"][time_name]["estimated"].update(full_dt)
+            out_row["times"][time_name]["estimated"] = full_dt
 
     return out_row
 
-def station_board(cursor, tiplocs, base_dt=None, intermediate_tiploc=None, passenger_only=True):
+def station_board(cursor, locations, base_dt=None, intermediate_tiploc=None, passenger_only=True):
     stat_select = form_location_select([("base", "b_stat", "b_loc"), ("orig", "o_stat", "o_loc"), ("inter", "i_stat", "i_loc"), ("dest", "d_stat", "d_loc")])
     cursor.execute("""SELECT
         sch.uid,sch.rid,sch.rsid,sch.ssd,sch.signalling_id,sch.status,sch.category,sch.operator,
@@ -113,12 +101,13 @@ def station_board(cursor, tiplocs, base_dt=None, intermediate_tiploc=None, passe
         LEFT JOIN darwin_locations AS d_loc ON dest.tiploc=d_loc.tiploc
 
         WHERE base.wtd IS NOT NULL
-        AND base.tiploc in %s
+        AND (base.tiploc in %s OR base.tiploc in (SELECT tiploc FROM darwin_locations WHERE crs_darwin=%s))
         AND base.type in ('IP', 'DT', 'OR')
         AND NOT sch.is_deleted
         AND base.wtd >= %s
-        ORDER BY base.wtd;""".format(stat_select), (
-        intermediate_tiploc, tiplocs, base_dt))
+        ORDER BY base.wtd
+        LIMIT 50;""".format(stat_select), (
+        intermediate_tiploc, *[locations]*2, base_dt))
 
     services = []
 
