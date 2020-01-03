@@ -13,23 +13,6 @@ import stomp
 from util import database
 from util import pushport
 
-fh = logging.FileHandler('logs/swallow.log')
-ch = logging.StreamHandler()
-ch.setLevel(logging.DEBUG)
-fh.setLevel(logging.DEBUG)
-
-log = logging.getLogger("IronSwallow")
-log.setLevel(logging.DEBUG)
-log.propagate = False
-
-format = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s", '%Y-%m-%dT%H:%M:%S%z')
-for handler in (ch,fh):
-    handler.setFormatter(format)
-    log.addHandler(handler)
-
-with open("secret.json") as f:
-    SECRET = json.load(f)
-
 def compare_time(t1, t2):
     if not (t1 and t2):
         return 0
@@ -80,8 +63,8 @@ def incorporate_reference_data(c):
                 ("name_corpus", case(strip(corpus_loc.get("NLCDESC")))),
                 ])
             loc.update(OrderedDict([
-                ("name_short",loc["name_corpus"] or loc["name_darwin"]),
-                ("name_full", loc["name_darwin"] or loc["name_corpus"]),
+                ("name_short",loc["name_darwin"] or loc["name_corpus"]),
+                ("name_full",loc["name_darwin"] or loc["name_corpus"]),
                 ]))
 
             c.execute("""INSERT INTO darwin_locations VALUES (%s, %s, %s, %s, %s, %s, %s)
@@ -117,6 +100,11 @@ def incorporate_ftp(c):
                 read_buffer = bytearray()
                 ftp.retrbinary("RETR {}".format(file), read_buffer.extend)
                 actual_files.append((file, read_buffer))
+
+            c.execute("BEGIN;")
+            c.execute("DELETE FROM darwin_schedules;")
+            c.execute("DELETE FROM darwin_schedule_locations;")
+            c.execute("DELETE FROM darwin_schedule_status;")
 
             while actual_files:
                 file, contents = actual_files[0]
@@ -279,22 +267,40 @@ class Listener(stomp.ConnectionListener):
     def on_disconnected(self):
         log.error("Disconnected")
 
-mq = stomp.Connection([(SECRET["hostname"], 61613)],
-    keepalive=True, auto_decode=False, heartbeats=(10000, 10000))
+if __name__ == "__main__":
+    fh = logging.FileHandler('logs/swallow.log')
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.DEBUG)
+    fh.setLevel(logging.DEBUG)
 
-with database.DatabaseConnection() as db_connection, db_connection.new_cursor() as cursor:
-    cursor.execute("SELECT * FROM last_received_sequence;")
-    row = cursor.fetchone()
+    log = logging.getLogger("IronSwallow")
+    log.setLevel(logging.DEBUG)
+    log.propagate = False
 
-    incorporate_reference_data(cursor)
+    format = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s", '%Y-%m-%dT%H:%M:%S%z')
+    for handler in (ch,fh):
+        handler.setFormatter(format)
+        log.addHandler(handler)
 
-    if not row or (datetime.datetime.utcnow()-row[2]).seconds > 300:
-        log.info("Last retrieval too old, using FTP snapshots")
-        incorporate_ftp(cursor)
+    with open("secret.json") as f:
+        SECRET = json.load(f)
 
-    mq.set_listener('iron-swallow', Listener(mq, cursor))
-    connect_and_subscribe(mq)
+    mq = stomp.Connection([(SECRET["hostname"], 61613)],
+        keepalive=True, auto_decode=False, heartbeats=(10000, 10000))
 
-    while True:
-        sleep(3600*12)
+    with database.DatabaseConnection() as db_connection, db_connection.new_cursor() as cursor:
+        cursor.execute("SELECT * FROM last_received_sequence;")
+        row = cursor.fetchone()
+
         incorporate_reference_data(cursor)
+
+        if not row or (datetime.datetime.utcnow()-row[2]).seconds > 300:
+            log.info("Last retrieval too old, using FTP snapshots")
+            incorporate_ftp(cursor)
+
+        mq.set_listener('iron-swallow', Listener(mq, cursor))
+        connect_and_subscribe(mq)
+
+        while True:
+            sleep(3600*12)
+            incorporate_reference_data(cursor)
