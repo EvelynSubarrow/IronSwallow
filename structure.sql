@@ -116,3 +116,4 @@ CREATE TABLE darwin_locations (
 );
 
 CREATE INDEX idx_location_tiploc on darwin_locations(tiploc);
+CREATE INDEX idx_location_crs_darwin on darwin_locations(crs_darwin);
