@@ -76,6 +76,7 @@ def location_dict(row):
     return out_row
 
 def station_board(cursor, locations, base_dt=None, intermediate_tiploc=None, passenger_only=True):
+    locations = tuple([a.upper() for a in locations])
     stat_select = form_location_select([("base", "b_stat", "b_loc"), ("orig", "o_stat", "o_loc"), ("inter", "i_stat", "i_loc"), ("dest", "d_stat", "d_loc")])
     cursor.execute("""SELECT
         sch.uid,sch.rid,sch.rsid,sch.ssd,sch.signalling_id,sch.status,sch.category,sch.operator,
