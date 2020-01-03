@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1850 2000">
+ <defs>
+  <style>
+    .swallow {
+        fill-opacity: 1;
+        fill: white;
+        stroke-width:1px;
+        stroke: white;
+    }
+  </style>
+</defs>
+<rect x="0" y="0" width="100%" height="100%" fill="#000000" fill-opacity="0.995" />
+<!--<image xlink:href="intercity-template.png" />-->
+<path class="swallow" d="M 1491,65 H 1504 L 1509,79 H 1487 Z" />
+<path class="swallow" d="M 1465,138 H 1524 L 1528,153 H 1458 Z" />
+
+<path class="swallow" d="M 1436,210 H 1540 L 1544,224 H 1431 Z" />
+<path class="swallow" d="M 1410,280 H 1556 L 1560,293 H 1405 Z" />
+<path class="swallow" d="M 1391,349 H 1570 L 1572,361 H 1387 Z" />
+<path class="swallow" d="M 1370,413 H 1579 L 1581,425 H 1365 Z" />
+
+<path class="swallow" d="M 1351,477 H 1585 L 1587,490 H 1348 Z" />
+
+<path class="swallow" d="M 1338,538 H 1588 V 553 H 1335 Q 1336,540 1338,538" />
+<path class="swallow" d="M 1326,595 H 1589 L 1593,609 H 1323 Z" />
+<path class="swallow" d="M 1319,652 H 1599 L 1600,665 H 1321 Z" />
+<path class="swallow" d="M 1306,706 H 1598 L 1589,723 H 1286 Z" />
+<path class="swallow" d="M 1253,760 H 1570 L 1556,779 H 1230 Z" />
+<path class="swallow" d="M 1178,814 H 1535 Q 1525,824 1520,839 H 1130 Q 1160,828 1178,814 Z" />
+<!-- wing end, tail start -->
+<path class="swallow" d="M 207,759 H 249 Q 290,780 385,792 H 268 Q 224,779 207,759 Z" />
+<path class="swallow" d="M 342,816 H 496 Q 572,821 623,840 H 434 Q 394,826 342,816 Z" />
+<!-- tail end, central body start -->
+<path class="swallow" d="M 490,865 L 792,870 Q 890,890 990,870 L 1570,870 Q 1640,870 1656,890 L 1654,896 L 570,896 Q 544,878 490,865 Z" />
+<path class="swallow" d="M 608,924 L 1699,924 L 1727,952 L 642,952 Q 638,936 608,924 Z" />
+<path class="swallow" d="M 651,975 H 1756 L 1798,988 V 994 H 1733 L 1701,1009 H 596 Q 639,997 651,975 Z" />
+<path class="swallow" d="M 576,1031 H 1660 Q 1611,1055 1526,1066 H 1000 Q 900,1030 772,1066 H 495 Q 550,1055 576,1031 Z" />
+<!-- central body end, tail start -->
+<path class="swallow" d="M 450,1090 H 680 Q 607,1102 550,1122 H 370 Q 440,1100 450,1090 Z" />
+<path class="swallow" d="M 322,1142 H 466 Q 359,1168 331,1179 H 210 Q 305,1152 322,1142 Z" />
+<path class="swallow" d="M 160,1200 H 248 Q 146,1219 85,1240 H 56 Q 74,1218 160,1200 Z" />
+<!-- tail end, wing start -->
+<path class="swallow" d="M 1066,1091 H 1469 Q 1455,1098 1455,1123 H 1100 Q 1093,1104 1066,1091 Z" />
+<path class="swallow" d="M 1106,1144 H 1458 V 1183 H 1120 Q 1112,1177 1106,1144 Z" />
+<path class="swallow" d="M 1129,1202 H 1458 V 1239 H 1148 Q 1136,1235 1129,1202 Z" />
+<path class="swallow" d="M 1148,1258 H 1458 Q 1456,1297 1447,1297 H 1147 Q 1155,1282 1148,1258 Z" />
+<!--<path class="swallow" d="M 1148,1258 H 1458 Q 1456,1297 1447,1297 H 1147 Z" /> -->
+
+<path class="swallow" d="M 1138,1316 H 1442 Q 1426,1350 1413,1358 H 1112 Q 1107,1348 1138,1316 Z" />
+
+<path class="swallow" d="M 1104,1378 H 1402 Q 1402,1380 1365,1423 H 1079 Z" />
+<path class="swallow" d="M 1070,1440 H 1354 Q 1334,1458 1323,1488 H 1050 Z" />
+<path class="swallow" d="M 1041,1507 H 1313 L 1284,1557 H 1023 Z" />
+
+<path class="swallow" d="M 1016,1575 H 1272 L 1233,1630 H 1000 Z" />
+
+<path class="swallow" d="M 997,1648 H 1221 L 1175,1705 H 969 Q 997,1665 997,1648 Z" />
+
+<path class="swallow" d="M 969,1723 H 1158 L 1103,1782 H 967 L 989,1755 Q 996,1745 990,1741 L 973,1745 Q 943,1734 969,1723" />
+<path class="swallow" d="M 956,1797 H 1086 L 1019,1863 H 954 L 968,1843 Q 977,1824 959,1832 Q 930,1819 956,1797" />
+<path class="swallow" d="M 940,1881 H 1001 Q 961,1909 933,1944 Q 918,1945 904,1950 Q 920,1902 940,1881 Z" />
+</svg>

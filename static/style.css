@@ -1,0 +1,231 @@
+body
+{
+    background-color: #04000b;
+    color: #ddf;
+    font-family: monospace;
+    font-size: 10pt;
+    whitespace: pre;
+    margin:0;
+    width:100%;
+}
+
+.container {
+    position: relative;
+    min-height: 100vh;
+    box-sizing: border-box;
+    display: grid;
+    grid-template-rows: auto auto 1fr auto;
+}
+
+.content
+{
+    width:        80%;
+    margin-left:  auto;
+    margin-right: auto;
+    border-left:  solid 1px #88f;
+    padding-left: 20px;
+    padding-top:  10px;
+    padding-bottom: 10px;
+}
+
+header
+{
+    color:#668;
+    margin-left: auto;
+    margin-right: auto;
+    font-size: 8pt;
+}
+
+footer
+{
+    color:#668;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.message
+{
+    border-left: 1px solid #633;
+    padding-left: 5px;
+    font-size: 15pt;
+}
+
+.scheduleform {
+    margin-left: auto;
+    margin-right: auto;
+    display: inline-block;
+}
+
+form {
+    display: block;
+}
+
+input, textarea, select {
+    font-family: monospace;
+    border: none;
+    border-left: solid 1px #88f;
+    background-color: inherit;
+    color:           #ddf;
+    padding-left:5px;
+    resize: none;
+}
+input:focus, textarea:focus, select:focus {
+    outline: none;
+}
+
+textarea {
+    width: 100%;
+}
+
+input[type=submit], select {
+    color: #aaf;
+    text-decoration: underline;
+}
+
+label {
+    border-left: solid 1px #88f;
+    padding-left:5px;
+}
+
+label :invalid + span {
+    color: #A44;
+}
+
+label :valid + span {
+    color: #4A4;
+}
+
+.note
+{
+    border-left: 1px solid #663;
+    padding-left: 5px;
+}
+
+table
+{
+    margin-top:      10px;
+    width:           100%;
+    border-spacing:  0;
+    border-collapse: collapse;
+}
+
+td,th
+{
+    vertical-align: top;
+    padding-left:   5px;
+    padding-right:  5px;
+    text-align:     left;
+    white-space:    nowrap;
+}
+
+th {
+    font-style:     normal;
+    font-weight:    lighter;
+}
+
+.row-overflow th {
+    max-width: 3ch;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.row-overflow th:hover {
+    max-width: 64ch;
+    overflow: visible
+}
+
+.headgroup
+{
+    padding:    0px;
+    text-align: center;
+}
+
+tr.primaryrow:nth-child(odd) {
+    background: #04000f;
+}
+
+tr.primaryrow:hover {
+    background: #08080f;
+}
+
+.headrow
+{
+    background-color: #000 !important;
+    border-top: none;
+    color:#787880;
+}
+
+tr
+{
+    box-sizing: border-box;
+    width:100%;
+    border-top:    solid 1px #060612;
+    border-bottom: solid 1px #060612;
+}
+
+tr:first-child
+{
+    border-width: 0px;
+}
+
+/* Outline table */
+.uid      { min-width: 6ch;  }
+.stp      { width: 3ch;  }
+.operator { width: 100%; }
+
+/* Physical table */
+.diagram { width:100%; }
+.diagram-container {
+    border-left: 1px solid #334;
+    padding-left: 5px;
+}
+
+.classname {
+    font-style: italic;
+    width: 100%;
+}
+
+.borderright
+{
+    border-right: 1px solid #334;
+}
+
+.borderleft
+{
+    border-left: 1px solid #334;
+}
+
+.passenger
+{
+    color:#668;
+}
+
+.operational
+{
+    color:#668;
+}
+
+.passenger.highlight
+{
+    color: #ddf;
+}
+
+/* General links */
+a:link
+{
+    text-decoration: underline;
+    color: #aaf;
+}
+
+a:visited
+{
+    text-decoration: underline;
+    color:           #aad;
+    font-weight:     normal;
+}
+
+a:hover,
+a:active
+{
+    text-decoration: underline;
+}
