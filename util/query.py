@@ -47,8 +47,8 @@ def combine_darwin_time(working_time, darwin_time):
 
 def form_location_select(names):
     stat_select = ""
-    for location_name, stat_name in names:
-        stat_select += "{ln}.type, {ln}.tiploc, {ln}.activity, {ln}.cancelled, {ln}.wta, {ln}.pta, {ln}.wtp, NULL, {ln}.wtd, {ln}.ptd,\n".format(ln=location_name)
+    for location_name, stat_name, loc_dict_name in names:
+        stat_select += "{ln}.type, {ld}.dict, {ln}.activity, {ln}.cancelled, {ln}.wta, {ln}.pta, {ln}.wtp, NULL, {ln}.wtd, {ln}.ptd,\n".format(ln=location_name, ld=loc_dict_name)
         stat_select += "{sn}.plat, {sn}.plat_suppressed, {sn}.plat_cis_suppressed, {sn}.plat_confirmed, {sn}.plat_source,\n".format(sn=stat_name)
         for time_name in ("ta", "tp", "td"):
             stat_select += "{sn}.{tn}, {sn}.{tn}_source, {sn}.{tn}_type, {sn}.{tn}_delayed{comma}\n".format(
@@ -56,7 +56,7 @@ def form_location_select(names):
     return stat_select
 
 def location_dict(row):
-    out_row = OrderedDict([(a,row.pop()) for a in ("type","tiploc","activity","cancelled")])
+    out_row = OrderedDict([(a,row.pop()) for a in ("type","location","activity","cancelled")])
     out_row["times"] = OrderedDict()
 
     for time_name in ("arrival", "pass", "departure"):
@@ -88,7 +88,7 @@ def location_dict(row):
     return out_row
 
 def station_board(cursor, tiplocs, base_dt=None, intermediate_tiploc=None, passenger_only=True):
-    stat_select = form_location_select([("base", "b_stat"), ("orig", "o_stat"), ("inter", "i_stat"), ("dest", "d_stat")])
+    stat_select = form_location_select([("base", "b_stat", "b_loc"), ("orig", "o_stat", "o_loc"), ("inter", "i_stat", "i_loc"), ("dest", "d_stat", "d_loc")])
     cursor.execute("""SELECT
         sch.uid,sch.rid,sch.rsid,sch.ssd,sch.signalling_id,sch.status,sch.category,sch.operator,
         sch.is_active,sch.is_charter,sch.is_passenger,
@@ -106,6 +106,11 @@ def station_board(cursor, tiplocs, base_dt=None, intermediate_tiploc=None, passe
         LEFT JOIN darwin_schedule_status AS b_stat ON base.rid=b_stat.rid AND base.original_wt=b_stat.original_wt
         LEFT JOIN darwin_schedule_status AS i_stat ON inter.rid=i_stat.rid AND inter.original_wt=i_stat.original_wt
         LEFT JOIN darwin_schedule_status AS d_stat ON dest.rid=d_stat.rid AND dest.original_wt=d_stat.original_wt
+
+        LEFT JOIN darwin_locations AS o_loc ON orig.tiploc=o_loc.tiploc
+        LEFT JOIN darwin_locations AS b_loc ON base.tiploc=b_loc.tiploc
+        LEFT JOIN darwin_locations AS i_loc ON inter.tiploc=i_loc.tiploc
+        LEFT JOIN darwin_locations AS d_loc ON dest.tiploc=d_loc.tiploc
 
         WHERE base.wtd IS NOT NULL
         AND base.tiploc in %s
@@ -139,8 +144,9 @@ def service(cursor, rid):
 
     cursor.execute("""SELECT {} FROM darwin_schedule_locations as loc
         LEFT JOIN darwin_schedule_status AS stat ON loc.rid=stat.rid AND loc.original_wt=stat.original_wt
+        LEFT JOIN darwin_locations AS loc_outline ON loc.tiploc=loc_outline.tiploc
         WHERE loc.rid=%s ORDER BY INDEX ASC;
-        """.format(form_location_select([("loc", "stat")])), (rid,))
+        """.format(form_location_select([("loc", "stat", "loc_outline")])), (rid,))
 
     schedule = OrderedDict()
     schedule["locations"] = []
