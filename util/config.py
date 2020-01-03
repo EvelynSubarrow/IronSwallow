@@ -2,8 +2,14 @@
 
 import json
 
-with open("secret.json") as f:
-    config = json.load(f)
+config = {}
 
-def get(key):
-    return config.get(key)
+for config_path in ("config.json", "secret.json"):
+    try:
+        with open(config_path) as f:
+            config.update(json.load(f))
+    except e:
+        pass
+
+def get(key, default=None):
+    return config.get(key, default)
