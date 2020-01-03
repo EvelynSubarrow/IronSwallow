@@ -64,7 +64,7 @@ def incorporate_reference_data(c):
                 ])
             loc.update(OrderedDict([
                 ("name_short",loc["name_darwin"] or loc["name_corpus"]),
-                ("name_full",loc["name_darwin"] or loc["name_corpus"]),
+                ("name_full",loc["name_corpus"] or loc["name_darwin"]),
                 ]))
 
             c.execute("""INSERT INTO darwin_locations VALUES (%s, %s, %s, %s, %s, %s, %s)
