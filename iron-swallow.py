@@ -228,7 +228,7 @@ def parse(cursor, message):
                         (ta,tp,td, ta_source,tp_source,td_source, ta_type,tp_type,td_type, ta_delayed,tp_delayed,td_delayed, plat,plat_suppressed,plat_cis_suppressed,plat_confirmed,plat_source)=
                         (EXCLUDED.ta,EXCLUDED.tp,EXCLUDED.td, EXCLUDED.ta_source,EXCLUDED.tp_source,EXCLUDED.td_source, EXCLUDED.ta_type,EXCLUDED.tp_type,EXCLUDED.td_type, EXCLUDED.ta_delayed,EXCLUDED.tp_delayed,EXCLUDED.td_delayed, EXCLUDED.plat,EXCLUDED.plat_suppressed,EXCLUDED.plat_cis_suppressed,EXCLUDED.plat_confirmed,EXCLUDED.plat_source);""", (
                         record["rid"], location["tpl"], original_wt, *times, *times_source, *times_type, *times_delay,
-                        plat.get("$"), bool(plat.get("platsup")), bool(plat.get("cisPlatsup")), bool(plat.get("conf")), bool(plat.get("platsrc"))))
+                        plat.get("$"), bool(plat.get("platsup")), bool(plat.get("cisPlatsup")), bool(plat.get("conf")), plat.get("platsrc")))
 
 class Listener(stomp.ConnectionListener):
     def __init__(self, mq, cursor):
