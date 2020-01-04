@@ -46,21 +46,26 @@ def form_location_select(names):
                 sn=stat_name, tn=time_name, comma=","*(not(stat_name==names[-1][1] and time_name=="td")))
     return stat_select
 
-def location_dict(row):
+def location_dict(row, preserve_null_times=False):
     out_row = OrderedDict([(a,row.pop()) for a in ("type","location","activity","cancelled")])
     out_row["times"] = OrderedDict()
 
     for time_name in ("arrival", "pass", "departure"):
-        out_row["times"][time_name] = OrderedDict([(a,row.pop()) for a in ("working", "public")])
-        out_row["times"][time_name]["estimated"] = None
-        out_row["times"][time_name]["actual"] = None
+        out_row["times"][time_name] = OrderedDict()
+        for time_type in ("working", "public"):
+            time = row.pop()
+            if time or preserve_null_times:
+                out_row["times"][time_name][time_type] = time
+        if preserve_null_times:
+            out_row["times"][time_name]["estimated"] = None
+            out_row["times"][time_name]["actual"] = None
 
     out_row["platform"] = OrderedDict(
         [(a, row.pop()) for a in ("platform", "suppressed", "cis_suppressed", "confirmed", "source")])
 
     for time_name in ("arrival", "pass", "departure"):
         darwin_time = OrderedDict([(a, row.pop()) for a in ("time", "source", "type", "delayed")])
-        working_time = out_row["times"][time_name]["working"]
+        working_time = out_row["times"][time_name].get("working")
 
         if darwin_time["time"] and working_time:
             full_dt = combine_darwin_time(working_time, darwin_time["time"])
