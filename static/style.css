@@ -185,6 +185,51 @@ tr:first-child
     width: 100%;
 }
 
+/* Location only */
+.as-required { font-style: italic; }
+.origin, .destination {
+    max-width: 26ch;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.origin:hover, .destination:hover {
+    max-width: 64ch;
+    overflow: visible;
+}
+
+/* Locations table for schedule */
+.pass { color:#668; }
+
+.tiploc     { min-width: 7ch;  }
+.crs        { min-width: 3ch;  }
+.locname    { width: 100%; }
+.platform   { min-width: 3ch;  }
+.time       { min-width: 5ch;  }
+.routepart  { min-width: 3ch;  }
+.activities { min-width: 4ch;  }
+.distance   { min-width: 1ch;  }
+.activity {
+    padding-right: 1px;
+}
+
+td.associations {
+    box-sizing: border-box;
+    width:100%;
+    border: 1px solid #334;
+    border-style: none solid none solid;
+    background-color: #020005;
+}
+
+table.associations {
+    margin-top:0;
+    margin-bottom:0;
+}
+
+.assoc_assoc { min-width:1ch;}
+.assoc_type  { min-width:1ch;}
+.assoc_direction { min-width:4ch;}
+
 .borderright
 {
     border-right: 1px solid #334;
