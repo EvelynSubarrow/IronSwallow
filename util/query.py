@@ -46,7 +46,7 @@ def form_location_select(names):
                 sn=stat_name, tn=time_name, comma=","*(not(stat_name==names[-1][1] and time_name=="td")))
     return stat_select
 
-def location_dict(row, preserve_null_times=False):
+def location_dict(row, preserve_null_times=False, preserve_null_platform=False):
     out_row = OrderedDict([(a,row.pop()) for a in ("type","location","activity","cancelled")])
     out_row["times"] = OrderedDict()
 
@@ -60,8 +60,11 @@ def location_dict(row, preserve_null_times=False):
             out_row["times"][time_name]["estimated"] = None
             out_row["times"][time_name]["actual"] = None
 
-    out_row["platform"] = OrderedDict(
-        [(a, row.pop()) for a in ("platform", "suppressed", "cis_suppressed", "confirmed", "source")])
+    out_row["platform"] = OrderedDict()
+    for platform_field_name in ("platform", "suppressed", "cis_suppressed", "confirmed", "source"):
+        platform_field = row.pop()
+        if platform_field!=None or preserve_null_platform:
+            out_row["platform"][platform_field_name] = platform_field
 
     for time_name in ("arrival", "pass", "departure"):
         darwin_time = OrderedDict([(a, row.pop()) for a in ("time", "source", "type", "delayed")])
@@ -77,7 +80,7 @@ def location_dict(row, preserve_null_times=False):
 
     return out_row
 
-def station_board(cursor, locations, base_dt=None, intermediate_tiploc=None, passenger_only=True):
+def station_board(cursor, locations, base_dt=None, period=480, intermediate_tiploc=None, passenger_only=True):
     locations = tuple([a.upper() for a in locations])
     stat_select = form_location_select([("base", "b_stat", "b_loc"), ("orig", "o_stat", "o_loc"), ("inter", "i_stat", "i_loc"), ("dest", "d_stat", "d_loc")])
     cursor.execute("""SELECT
@@ -107,10 +110,11 @@ def station_board(cursor, locations, base_dt=None, intermediate_tiploc=None, pas
         AND (base.tiploc in %s OR base.tiploc in (SELECT tiploc FROM darwin_locations WHERE crs_darwin=%s))
         AND base.type in ('IP', 'DT', 'OR')
         AND NOT sch.is_deleted
-        AND base.wtd >= %s
+        AND %s <= base.wtd
+        AND %s >= base.wtd
         ORDER BY base.wtd
         LIMIT 15;""".format(stat_select), (
-        intermediate_tiploc, *[locations]*2, base_dt))
+        intermediate_tiploc, *[locations]*2, base_dt, base_dt+datetime.timedelta(minutes=period)))
 
     services = []
 
