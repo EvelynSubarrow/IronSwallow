@@ -40,12 +40,12 @@
             {% for schedule in services -%}
                 <tr class="primaryrow {{ "pass" if schedule["here"]["times"]["pass"] else ""}} {{ "as-required" if "Q" in "" else "" }}">
                     <td class="tiploc borderleft">{{ schedule["here"]["tiploc"] }}</td>
-                    <td class="platform borderleft borderright"> {{ schedule["here"]["platform"].get("platform") or ""}}
+                    <td class="platform borderleft borderright"> {{ (schedule["here"]["platform"].get("platform") or "") + (schedule["here"]["platform"].get("confirmed",False)*"." or "")}}</td>
                     <td class="time borderleft">{{  format_time(schedule["here"]["times"]["arrival"], "w")   }}</td>
                     <td class="time">{{ format_time(schedule["here"]["times"]["pass"], "w")      }}</td>
                     <td class="time borderright">{{ format_time(schedule["here"]["times"]["departure"], "w") }}</td>
                     <td class="time borderleft">{{  format_time(schedule["here"]["times"]["arrival"],   ".") }}</td>
-                    <td class="time">{{             format_time(schedule["here"]["times"]["arrival"],   ".") }}</td>
+                    <td class="time">{{             format_time(schedule["here"]["times"]["pass"],   ".") }}</td>
                     <td class="time borderright">{{ format_time(schedule["here"]["times"]["departure"], ".") }}</td>
                     <td class="activities borderleft borderright">{{ schedule["here"]["activity"] }}</td>
                     <td class="uid borderleft">{{ schedule["uid"] }}</td>
