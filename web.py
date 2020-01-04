@@ -16,6 +16,24 @@ from util import query
 app = flask.Flask(__name__)
 _web_db = None
 
+class UnauthenticatedException(Exception): pass
+
+def error_page(code, message):
+    return flask.render_template('error.html', messages=["{0} - {1}".format(code, message)]), code
+
+def format_time(dt, part):
+    if part=="w":
+        dt = dt.get("working")
+    elif part==".":
+        dt = dt.get("estimated") or dt.get("actual")
+    else:
+        raise ValueError()
+
+    if not dt:
+        return ""
+    else:
+        return dt.strftime("%H%M") + "½"*(dt.second==30)
+
 @app.route('/')
 def index():
     return flask.render_template('index.html')
@@ -49,6 +67,32 @@ def json_departures(location, time):
         if not failure_message:
             status, failure_message = 500, "Unhandled exception"
     return Response(json.dumps({"success": False, "message":failure_message}, indent=2), mimetype="application/json", status=status)
+
+@app.route('/departures/<location>', defaults={"time": "now"})
+@app.route('/departures/<location>/<time>')
+def html_location(location, time):
+    try:
+        if not location.isalnum(): raise ValueError
+
+        if time=="now":
+            time = datetime.datetime.now()
+        else:
+            time = datetime.datetime.strptime(time, "%Y-%m-%dT%H:%M:%S")
+
+        with get_cursor() as c:
+            services = query.station_board(c, (location,), time)
+
+    except ValueError as e:
+        return error_page(400, "Location names must be alphanumeric, datestamp must be either ISO 8601 format (YYYY-MM-DDThh:mm:ss) or 'now'")
+    except UnauthenticatedException as e:
+        return error_page(403, "Unauthenticated")
+    except Exception as e:
+        return error_page(500, "Unhandled exception")
+    return Response(
+        flask.render_template("location.html", services=services, time=time, location=location, format_time=format_time),
+        status=200,
+        mimetype="text/html"
+        )
 
 def get_cursor():
     global _web_db

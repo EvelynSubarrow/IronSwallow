@@ -1,0 +1,60 @@
+{% extends "layout.html" %}
+{% block title %}{{location}} services on {{time.isoformat()}}{% endblock %}
+{% block content %}
+        {% if "" %}
+            <section class="message">{{message}}</section>
+        {% endif %}
+        {% for note in [] %}
+            <section class="note">{{ note }}</section>
+        {% endfor %}
+            <table>
+                <tr class="headrow">
+                    <th colspan="2" class="headgroup"></th>
+                    <th colspan="3" class="headgroup">WTT</th>
+                    <th colspan="3" class="headgroup">Darwin</th>
+                    <th colspan="7" class="headgroup"></th>
+                </tr>
+                <tr class="headrow row-overflow">
+                    <th class="borderleft">TIPLOC</th>
+                    <th class="borderleft borderright">Pl</th>
+
+                    <th class="borderleft">Arr</th>
+                    <th>Pass</th>
+                    <th class="borderright">Dep</th>
+
+                    <th class="borderleft">Pass</th>
+                    <th>Pass</th>
+                    <th class="borderright">Dep</th>
+
+                    <th class="borderleft borderright">Activity</th>
+
+                    <th>UID</th>
+                    <th>Head</th>
+
+                    <th class="borderleft">Category</th>
+                    <th class="borderright">Operator</th>
+
+                    <th class="borderleft">Origin</th>
+                    <th class="borderright">Destination</th>
+                </tr>
+            {% for schedule in services -%}
+                <tr class="primaryrow {{ "pass" if schedule["here"]["times"]["pass"] else ""}} {{ "as-required" if "Q" in "" else "" }}">
+                    <td class="tiploc borderleft">{{ schedule["here"]["tiploc"] }}</td>
+                    <td class="platform borderleft borderright"> {{ schedule["here"]["platform"].get("platform") or ""}}
+                    <td class="time borderleft">{{  format_time(schedule["here"]["times"]["arrival"], "w")   }}</td>
+                    <td class="time">{{ format_time(schedule["here"]["times"]["pass"], "w")      }}</td>
+                    <td class="time borderright">{{ format_time(schedule["here"]["times"]["departure"], "w") }}</td>
+                    <td class="time borderleft">{{  format_time(schedule["here"]["times"]["arrival"],   ".") }}</td>
+                    <td class="time">{{             format_time(schedule["here"]["times"]["arrival"],   ".") }}</td>
+                    <td class="time borderright">{{ format_time(schedule["here"]["times"]["departure"], ".") }}</td>
+                    <td class="activities borderleft borderright">{{ schedule["here"]["activity"] }}</td>
+                    <td class="uid borderleft">{{ schedule["uid"] }}</td>
+                    <td>{{ schedule["signalling_id"] or '' }}</td>
+                    <td>{{ schedule["category"] }}</td>
+                    <td>{{ schedule["operator"] }}</td>
+                    <td class="origin borderleft">{{ schedule["origin"]["name_full"] }}</td>
+                    <td class="destination borderright">{{ schedule["destination"]["name_full"] }}</td>
+                </tr>
+            {% endfor %}
+            </table>
+{% endblock %}

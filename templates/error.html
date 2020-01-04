@@ -1,0 +1,8 @@
+{% extends "layout.html" %}
+{% block title %}404{% endblock %}
+{% block content %}
+                {% for message in messages %}
+                <section class="message">{{message}}</section>
+                {% endfor %}
+{% endblock %}
+
