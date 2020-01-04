@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
-import logging, json, datetime, io, zlib, gzip
-from ftplib import FTP
+import logging, json, datetime, io, zlib, gzip, multiprocessing, ftplib
 from time import sleep
 from decimal import Decimal
 from collections import OrderedDict
@@ -79,7 +78,7 @@ def incorporate_reference_data(c):
     c.execute("COMMIT;")
 
 def incorporate_ftp(c):
-    ftp = FTP(SECRET["ftp-hostname"])
+    ftp = ftplib.FTP(SECRET["ftp-hostname"])
     for n in range(1,31):
         try:
             log.info("FTP Connecting... (attempt %s)" % n)
@@ -106,18 +105,18 @@ def incorporate_ftp(c):
             c.execute("DELETE FROM darwin_schedule_locations;")
             c.execute("DELETE FROM darwin_schedule_status;")
 
+            pool = multiprocessing.Pool()
             while actual_files:
                 file, contents = actual_files[0]
                 log.info("Enqueueing retrieved file {}".format(file))
                 lines = gzip.decompress(contents).split(b"\n")
-                for line in lines:
-                    if line:
-                        parse(c, line)
+                for result in pool.imap(parse, lines):
+                    store(c,result)
                 del lines
                 del actual_files[0]
 
             return
-        except AssertionError as e:
+        except ftplib.Error as e:
             backoff = min(n**2, 600)
             log.error("FTP failed to connect, waiting {}s".format(backoff))
             sleep(backoff)
@@ -149,10 +148,14 @@ def connect_and_subscribe(mq):
             sleep(backoff)
     log.error("Connection attempts exhausted")
 
-def parse(cursor, message):
-    c = cursor
+def parse(message):
+    if message:
+        return pushport.PushPortParser().parse(io.StringIO(message.decode("utf8")))["Pport"].get("uR", {})
 
-    parsed = pushport.PushPortParser().parse(io.StringIO(message.decode("utf8")))["Pport"].get("uR", {})
+def store(cursor, parsed):
+    if not parsed:
+        return
+    c = cursor
 
     for record in parsed.get("list", []):
         if record["tag"]=="schedule":
@@ -246,7 +249,7 @@ class Listener(stomp.ConnectionListener):
 
         message = zlib.decompress(message, zlib.MAX_WBITS | 32)
 
-        parse(self.cursor, message)
+        store(self.cursor, parse(message))
         self._mq.ack(id=headers['message-id'], subscription=headers['subscription'])
 
         c.execute("""INSERT INTO last_received_sequence VALUES (0, %s, %s)
