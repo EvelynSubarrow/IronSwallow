@@ -1,10 +1,10 @@
 {% extends "layout.html" %}
 {% block title %}{{location}} services on {{time.isoformat()}}{% endblock %}
 {% block content %}
-        {% if "" %}
+        {% if message %}
             <section class="message">{{message}}</section>
         {% endif %}
-        {% for note in [] %}
+        {% for note in notes %}
             <section class="note">{{ note }}</section>
         {% endfor %}
             <table>
@@ -38,7 +38,7 @@
                     <th class="borderright">Destination</th>
                 </tr>
             {% for schedule in services -%}
-                <tr class="primaryrow {{ "pass" if schedule["here"]["times"]["pass"] else ""}} {{ "as-required" if "Q" in "" else "" }}">
+                <tr class="primaryrow {{ "pass" if schedule["here"]["times"]["pass"] else ""}} {{ "as-required" if "Q" in "" else "" }}{{" cancelled"*schedule["here"]["cancelled"] }}">
                     <td class="tiploc borderleft">{{ schedule["here"]["tiploc"] }}</td>
                     <td class="platform borderleft borderright"> {{ (schedule["here"]["platform"].get("platform") or "") + (schedule["here"]["platform"].get("confirmed",False)*"." or "")}}</td>
                     <td class="time borderleft">{{  format_time(schedule["here"]["times"]["arrival"], "w")   }}</td>
@@ -52,8 +52,8 @@
                     <td>{{ schedule["signalling_id"] or '' }}</td>
                     <td>{{ schedule["category"] }}</td>
                     <td>{{ schedule["operator"] }}</td>
-                    <td class="origin borderleft">{{ schedule["origin"]["name_full"] }}</td>
-                    <td class="destination borderright">{{ schedule["destination"]["name_full"] }}</td>
+                    <td class="origin borderleft {{"cancelled" if schedule["origin"]["cancelled"] else ''}}"><a href="/d/{{schedule["origin"]["tiploc"]}}">{{ schedule["origin"]["name_full"] }}</a></td>
+                    <td class="destination borderright {{"cancelled" if schedule["origin"]["cancelled"] else ''  }}"><a href="/d/{{schedule["destination"]["tiploc"]}}">{{ schedule["destination"]["name_full"] }}</a></td>
                 </tr>
             {% endfor %}
             </table>

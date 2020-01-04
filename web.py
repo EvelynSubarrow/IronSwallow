@@ -76,8 +76,11 @@ def html_location(location, time):
     try:
         if not location.isalnum(): raise ValueError
 
+        notes = []
+
         if time=="now":
             time = datetime.datetime.now()
+            notes.append("Departures are for time of request")
         else:
             time = datetime.datetime.strptime(time, "%Y-%m-%dT%H:%M:%S")
 
@@ -91,7 +94,7 @@ def html_location(location, time):
     except Exception as e:
         return error_page(500, "Unhandled exception")
     return Response(
-        flask.render_template("location.html", services=services, time=time, location=location, format_time=format_time),
+        flask.render_template("location.html", services=services, time=time, location=location, message=None, notes=notes, format_time=format_time),
         status=200,
         mimetype="text/html"
         )

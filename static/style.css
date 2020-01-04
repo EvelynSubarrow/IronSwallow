@@ -255,6 +255,10 @@ table.associations {
     color: #ddf;
 }
 
+.cancelled {
+    text-decoration: line-through;
+}
+
 /* General links */
 a:link
 {
