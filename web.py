@@ -70,6 +70,8 @@ def json_departures(location, time):
 
 @app.route('/departures/<location>', defaults={"time": "now"})
 @app.route('/departures/<location>/<time>')
+@app.route('/d/<location>', defaults={"time": "now"})
+@app.route('/d/<location>/<time>')
 def html_location(location, time):
     try:
         if not location.isalnum(): raise ValueError
@@ -80,7 +82,7 @@ def html_location(location, time):
             time = datetime.datetime.strptime(time, "%Y-%m-%dT%H:%M:%S")
 
         with get_cursor() as c:
-            services = query.station_board(c, (location,), time)
+            services = query.station_board(c, (location,), time, limit=50)
 
     except ValueError as e:
         return error_page(400, "Location names must be alphanumeric, datestamp must be either ISO 8601 format (YYYY-MM-DDThh:mm:ss) or 'now'")
