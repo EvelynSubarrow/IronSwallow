@@ -46,8 +46,22 @@ def form_location_select(names):
                 sn=stat_name, tn=time_name, comma=","*(not(stat_name==names[-1][1] and time_name=="td")))
     return stat_select
 
+def process_location_outline(location):
+    if location:
+        del location["name_darwin"]
+        del location["name_corpus"]
+        del location["crs_corpus"]
+        del location["operator"]
+    return location
+
 def location_dict(row, preserve_null_times=False, preserve_null_platform=False):
     out_row = OrderedDict([(a,row.pop()) for a in ("type","location","activity","cancelled")])
+
+    loc_outline = process_location_outline(out_row["location"])
+    del out_row["location"]
+    if loc_outline:
+        out_row.update(loc_outline)
+
     out_row["times"] = OrderedDict()
 
     for time_name in ("arrival", "pass", "departure"):
@@ -80,7 +94,7 @@ def location_dict(row, preserve_null_times=False, preserve_null_platform=False):
 
     return out_row
 
-def station_board(cursor, locations, base_dt=None, period=480, intermediate_tiploc=None, passenger_only=True):
+def station_board(cursor, locations, base_dt=None, period=480, limit=15, intermediate_tiploc=None, passenger_only=True):
     locations = tuple([a.upper() for a in locations])
     stat_select = form_location_select([("base", "b_stat", "b_loc"), ("orig", "o_stat", "o_loc"), ("inter", "i_stat", "i_loc"), ("dest", "d_stat", "d_loc")])
     cursor.execute("""SELECT
@@ -113,8 +127,8 @@ def station_board(cursor, locations, base_dt=None, period=480, intermediate_tipl
         AND %s <= base.wtd
         AND %s >= base.wtd
         ORDER BY base.wtd
-        LIMIT 15;""".format(stat_select), (
-        intermediate_tiploc, *[locations]*2, base_dt, base_dt+datetime.timedelta(minutes=period)))
+        LIMIT %s;""".format(stat_select), (
+        intermediate_tiploc, *[locations]*2, base_dt, base_dt+datetime.timedelta(minutes=period), limit))
 
     services = []
 
