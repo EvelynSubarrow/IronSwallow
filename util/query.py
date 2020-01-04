@@ -14,9 +14,6 @@ def json_default(value):
     else:
         raise ValueError(type(value))
 
-def process_datetime(dt):
-    return dt or None
-
 def compare_time(t1, t2):
     if not (t1 and t2):
         return 0
@@ -54,7 +51,7 @@ def location_dict(row):
     out_row["times"] = OrderedDict()
 
     for time_name in ("arrival", "pass", "departure"):
-        out_row["times"][time_name] = OrderedDict([(a,process_datetime(row.pop())) for a in ("working", "public")])
+        out_row["times"][time_name] = OrderedDict([(a,row.pop()) for a in ("working", "public")])
         out_row["times"][time_name]["estimated"] = None
         out_row["times"][time_name]["actual"] = None
 
@@ -66,7 +63,7 @@ def location_dict(row):
         working_time = out_row["times"][time_name]["working"]
 
         if darwin_time["time"] and working_time:
-            full_dt = process_datetime(combine_darwin_time(working_time, darwin_time["time"]))
+            full_dt = combine_darwin_time(working_time, darwin_time["time"])
 
         if darwin_time["type"]=="A":
             out_row["times"][time_name]["actual"] = full_dt
