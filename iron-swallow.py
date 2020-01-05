@@ -7,6 +7,7 @@ from collections import OrderedDict
 
 import boto3
 import psycopg2
+import psycopg2.extras
 import stomp
 
 from util import database
@@ -174,6 +175,8 @@ def store(cursor, parsed):
 
             c.execute("DELETE FROM darwin_schedule_locations WHERE rid=%s;", (record["rid"],))
 
+            batch = []
+
             for location in record["list"]:
                 if location["tag"] in ["OPOR", "OR", "OPIP", "IP", "PP", "DT", "OPDT"]:
 
@@ -200,10 +203,11 @@ def store(cursor, parsed):
 
                     original_wt = form_original_wt([process_time(location.get(a)) for a in ("wta", "wtp", "wtd")])
 
-                    c.execute("""INSERT INTO darwin_schedule_locations VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT DO NOTHING;""",
-                        (record["rid"], index, location["tag"], location["tpl"], location.get("act", ''), original_wt, *times, bool(location.get("can")), location.get("rdelay", 0)))
+                    batch.append((record["rid"], index, location["tag"], location["tpl"], location.get("act", ''), original_wt, *times, bool(location.get("can")), location.get("rdelay", 0)))
 
                     index += 1
+
+            psycopg2.extras.execute_batch(c, """INSERT INTO darwin_schedule_locations VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT DO NOTHING;""", batch)
 
         if record["tag"]=="TS":
             for location in record["list"]:
