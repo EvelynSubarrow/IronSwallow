@@ -28,6 +28,16 @@ body
     padding-bottom: 10px;
 }
 
+@media (max-aspect-ratio: 1/1)
+{
+    .content
+    {
+        width: 100%;
+        margin-left: 0px;
+        margin-right: 0px;
+    }
+}
+
 header
 {
     color:#668;
