@@ -150,21 +150,26 @@ def service(cursor, rid):
     cursor.execute("""SELECT sch.uid,sch.rid,sch.rsid,sch.ssd,sch.signalling_id,sch.status,sch.category,sch.operator,
         sch.is_active,sch.is_charter,sch.is_passenger FROM darwin_schedules as sch WHERE rid=%s""", (rid,))
 
-    row = list(cursor.fetchone())[::-1]
+    row = cursor.fetchone()
 
-    cursor.execute("""SELECT {} FROM darwin_schedule_locations as loc
-        LEFT JOIN darwin_schedule_status AS stat ON loc.rid=stat.rid AND loc.original_wt=stat.original_wt
-        LEFT JOIN darwin_locations AS loc_outline ON loc.tiploc=loc_outline.tiploc
-        WHERE loc.rid=%s ORDER BY INDEX ASC;
-        """.format(form_location_select([("loc", "stat", "loc_outline")])), (rid,))
-
-    schedule = OrderedDict()
-    schedule["locations"] = []
-    for key in ["uid", "rid", "rsid", "ssd", "signalling_id", "status", "category", "operator", "is_active", "is_charter", "is_passenger"]:
-        schedule[key] = row.pop()
-
-    for row in cursor.fetchall():
+    if not row:
+        return None
+    else:
         row = list(row)[::-1]
-        schedule["locations"].append(location_dict(row))
 
-    return schedule
+        cursor.execute("""SELECT {} FROM darwin_schedule_locations as loc
+            LEFT JOIN darwin_schedule_status AS stat ON loc.rid=stat.rid AND loc.original_wt=stat.original_wt
+            LEFT JOIN darwin_locations AS loc_outline ON loc.tiploc=loc_outline.tiploc
+            WHERE loc.rid=%s ORDER BY INDEX ASC;
+            """.format(form_location_select([("loc", "stat", "loc_outline")])), (rid,))
+
+        schedule = OrderedDict()
+        schedule["locations"] = []
+        for key in ["uid", "rid", "rsid", "ssd", "signalling_id", "status", "category", "operator", "is_active", "is_charter", "is_passenger"]:
+            schedule[key] = row.pop()
+
+        for row in cursor.fetchall():
+            row = list(row)[::-1]
+            schedule["locations"].append(location_dict(row))
+
+        return schedule
