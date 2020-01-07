@@ -48,6 +48,8 @@ def swallow():
 
 @app.route('/json/departures/<location>', defaults={"time": "now"})
 @app.route('/json/departures/<location>/<time>')
+@app.route('/j/d/<location>', defaults={"time": "now"})
+@app.route('/j/d/<location>/<time>')
 def json_departures(location, time):
     failure_message = None
     status = 200
