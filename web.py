@@ -70,6 +70,30 @@ def json_departures(location, time):
             status, failure_message = 500, "Unhandled exception"
     return Response(json.dumps({"success": False, "message":failure_message}, indent=2), mimetype="application/json", status=status)
 
+@app.route('/json/service/<id>')
+@app.route('/json/service/<id>/<date>')
+@app.route('/j/s/<id>')
+@app.route('/j/s/<id>/<date>')
+def json_service(id, date=None):
+    failure_message = None
+    status = 200
+    try:
+        if not id.isalnum(): raise ValueError
+        if date in ["now", "today"]:
+            date = datetime.datetime.now().date()
+        elif date!=None:
+            date = datetime.datetime.strptime(date, "%Y-%m-%d").date()
+
+        with get_cursor() as c:
+            struct=query.service(c, (id,))
+        return Response(json.dumps(struct, indent=2, default=query.json_default), mimetype="application/json", status=status)
+    except ValueError as e:
+        status, failure_message = 400, "/<rid> requires a valid RID, /<uid>/<date> requires a valid UID, and a ISO 8601 date, or 'now'"
+    except ValueError as e:
+        if not failure_message:
+            status, failure_message = 500, "Unhandled exception"
+    return Response(json.dumps({"success": False, "message":failure_message}, indent=2), mimetype="application/json", status=status)
+
 @app.route('/departures/<location>', defaults={"time": "now"})
 @app.route('/departures/<location>/<time>')
 @app.route('/d/<location>', defaults={"time": "now"})
