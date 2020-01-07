@@ -146,9 +146,9 @@ def station_board(cursor, locations, base_dt=None, period=480, limit=15, interme
 
     return services
 
-def service(cursor, rid):
+def service(cursor, sid, date=None):
     cursor.execute("""SELECT sch.uid,sch.rid,sch.rsid,sch.ssd,sch.signalling_id,sch.status,sch.category,sch.operator,
-        sch.is_active,sch.is_charter,sch.is_passenger FROM darwin_schedules as sch WHERE rid=%s""", (rid,))
+        sch.is_active,sch.is_charter,sch.is_passenger FROM darwin_schedules as sch WHERE rid=%s OR (uid=%s AND ssd=%s);""", (sid, sid, date))
 
     row = cursor.fetchone()
 
@@ -157,16 +157,17 @@ def service(cursor, rid):
     else:
         row = list(row)[::-1]
 
+        schedule = OrderedDict()
+        for key in ["uid", "rid", "rsid", "ssd", "signalling_id", "status", "category", "operator", "is_active", "is_charter", "is_passenger"]:
+            schedule[key] = row.pop()
+
         cursor.execute("""SELECT {} FROM darwin_schedule_locations as loc
             LEFT JOIN darwin_schedule_status AS stat ON loc.rid=stat.rid AND loc.original_wt=stat.original_wt
             LEFT JOIN darwin_locations AS loc_outline ON loc.tiploc=loc_outline.tiploc
             WHERE loc.rid=%s ORDER BY INDEX ASC;
-            """.format(form_location_select([("loc", "stat", "loc_outline")])), (rid,))
+            """.format(form_location_select([("loc", "stat", "loc_outline")])), (schedule["rid"],))
 
-        schedule = OrderedDict()
         schedule["locations"] = []
-        for key in ["uid", "rid", "rsid", "ssd", "signalling_id", "status", "category", "operator", "is_active", "is_charter", "is_passenger"]:
-            schedule[key] = row.pop()
 
         for row in cursor.fetchall():
             row = list(row)[::-1]
