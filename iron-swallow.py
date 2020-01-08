@@ -310,4 +310,5 @@ if __name__ == "__main__":
 
         while True:
             sleep(3600*12)
-            incorporate_reference_data(cursor)
+            with db_connection.new_cursor() as c2:
+                incorporate_reference_data(c2)
