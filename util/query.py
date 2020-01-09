@@ -174,3 +174,10 @@ def service(cursor, sid, date=None):
             schedule["locations"].append(location_dict(row))
 
         return schedule
+
+def last_retrieved(cursor):
+    cursor.execute("SELECT time_acquired FROM last_received_sequence;")
+    row = cursor.fetchone()
+    if row:
+        return row[0]
+
