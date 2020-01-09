@@ -82,6 +82,8 @@ CREATE TABLE darwin_schedule_status (
     plat_confirmed        BOOL,
     plat_source           VARCHAR,
 
+    length                SMALLINT,
+
     UNIQUE(rid, tiploc, original_wt)
 );
 
