@@ -238,6 +238,9 @@ def store(cursor, parsed):
                         plat.get("$"), bool(plat.get("platsup")), bool(plat.get("cisPlatsup")), bool(plat.get("conf")), plat.get("platsrc"),
                         record.get("length")))
 
+        if record["tag"]=="deactivated":
+            c.execute("UPDATE darwin_schedules SET is_active=FALSE WHERE rid=%s;", (record["rid"],))
+
 class Listener(stomp.ConnectionListener):
     def __init__(self, mq, cursor):
         self._mq = mq
