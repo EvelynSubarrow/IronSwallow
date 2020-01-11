@@ -240,6 +240,16 @@ def store(cursor, parsed):
 
         if record["tag"]=="deactivated":
             c.execute("UPDATE darwin_schedules SET is_active=FALSE WHERE rid=%s;", (record["rid"],))
+        if record["tag"]=="OW":
+            station_list = [a["crs"] for a in record["list"] if a["tag"]=="Station"]
+            message = [a.get("$") or '' for a in record["list"] if a["tag"]=="Msg"][0]
+            if station_list:
+                c.execute("""INSERT INTO darwin_messages VALUES (%s, %s, %s, %s, %s, %s) ON CONFLICT (message_id)
+                    DO UPDATE SET (category, severity, suppress, stations, message)=
+                    (EXCLUDED.category, EXCLUDED.severity, EXCLUDED.suppress, EXCLUDED.stations, EXCLUDED.message);""",
+                    (record["id"], record["cat"], record["sev"], bool(record.get("suppress")), station_list, message))
+            else:
+                c.execute("DELETE FROM darwin_messages WHERE message_id=%s;", (record["id"],))
 
 class Listener(stomp.ConnectionListener):
     def __init__(self, mq, cursor):

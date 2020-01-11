@@ -119,3 +119,19 @@ CREATE TABLE darwin_locations (
 
 CREATE INDEX idx_location_tiploc on darwin_locations(tiploc);
 CREATE INDEX idx_location_crs_darwin on darwin_locations(crs_darwin);
+
+CREATE TABLE darwin_messages (
+    message_id            INTEGER NOT NULL,
+    category              VARCHAR NOT NULL,
+    severity              SMALLINT NOT NULL,
+    suppress              BOOLEAN  NOT NULL,
+
+    stations              VARCHAR(3) ARRAY NOT NULL,
+    message               VARCHAR NOT NULL,
+
+    UNIQUE(message_id),
+    PRIMARY KEY (message_id)
+);
+
+CREATE INDEX idx_d_message_id on darwin_messages(message_id);
+CREATE INDEX idx_d_message_stations on darwin_messages(message_id);
