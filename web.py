@@ -61,7 +61,7 @@ def json_departures(location, time):
             time = datetime.datetime.strptime(time, "%Y-%m-%dT%H:%M:%S")
 
         with get_cursor() as c:
-            struct=query.station_board(c, (location,), time)
+            struct=query.station_board(c, (location,), time, period=500)
         return Response(json.dumps(struct, indent=2, default=query.json_default), mimetype="application/json", status=status)
     except ValueError as e:
         status, failure_message = 400, "Location codes must be alphanumeric, and the only permitted time is 'now'... for now"
@@ -70,11 +70,11 @@ def json_departures(location, time):
             status, failure_message = 500, "Unhandled exception"
     return Response(json.dumps({"success": False, "message":failure_message}, indent=2), mimetype="application/json", status=status)
 
-@app.route('/json/service/<id>')
+@app.route('/json/service/<id>', defaults={"date": None})
 @app.route('/json/service/<id>/<date>')
-@app.route('/j/s/<id>')
+@app.route('/j/s/<id>', defaults={"date": None})
 @app.route('/j/s/<id>/<date>')
-def json_service(id, date=None):
+def json_service(id, date):
     failure_message = None
     status = 200
     try:
@@ -83,9 +83,8 @@ def json_service(id, date=None):
             date = datetime.datetime.now().date()
         elif date!=None:
             date = datetime.datetime.strptime(date, "%Y-%m-%d").date()
-
         with get_cursor() as c:
-            struct=query.service(c, (id,))
+            struct=query.service(c, id, date)
         return Response(json.dumps(struct, indent=2, default=query.json_default), mimetype="application/json", status=status)
     except ValueError as e:
         status, failure_message = 400, "/<rid> requires a valid RID, /<uid>/<date> requires a valid UID, and a ISO 8601 date, or 'now'"
@@ -111,13 +110,17 @@ def html_location(location, time):
             time = datetime.datetime.strptime(time, "%Y-%m-%dT%H:%M:%S")
 
         with get_cursor() as c:
+            last_retrieved = query.last_retrieved(c)
+            if not last_retrieved or (datetime.datetime.now()-last_retrieved).seconds > 300:
+                notes.append("Last Darwin message was parsed more than five minutes ago, information is likely out of date.")
+
             services = query.station_board(c, (location,), time, limit=50)
 
     except ValueError as e:
         return error_page(400, "Location names must be alphanumeric, datestamp must be either ISO 8601 format (YYYY-MM-DDThh:mm:ss) or 'now'")
     except UnauthenticatedException as e:
         return error_page(403, "Unauthenticated")
-    except Exception as e:
+    except UnauthenticatedException as e:
         return error_page(500, "Unhandled exception")
     return Response(
         flask.render_template("location.html", services=services, time=time, location=location, message=None, notes=notes, format_time=format_time),
