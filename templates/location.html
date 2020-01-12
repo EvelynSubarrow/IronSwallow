@@ -37,7 +37,7 @@
                     <th class="borderleft">Origin</th>
                     <th class="borderright">Destination</th>
                 </tr>
-            {% for schedule in services -%}
+            {% for schedule in board["services"] -%}
                 <tr class="primaryrow {{ "pass" if schedule["here"]["times"]["pass"] else ""}} {{ "as-required" if "Q" in "" else "" }}{{" cancelled"*schedule["here"]["cancelled"] }}">
                     <td class="tiploc borderleft">{{ schedule["here"]["tiploc"] }}</td>
                     <td class="platform borderleft borderright"> {{ (schedule["here"]["platform"].get("platform") or "") + (schedule["here"]["platform"].get("confirmed",False)*"." or "")}}</td>

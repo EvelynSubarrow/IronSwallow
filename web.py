@@ -114,7 +114,9 @@ def html_location(location, time):
             if not last_retrieved or (datetime.datetime.now()-last_retrieved).seconds > 300:
                 notes.append("Last Darwin message was parsed more than five minutes ago, information is likely out of date.")
 
-            services = query.station_board(c, (location,), time, limit=50)
+            board = query.station_board(c, (location,), time, limit=50)
+            if not board:
+                return error_page(404, "No such location code is known")
 
     except ValueError as e:
         return error_page(400, "Location names must be alphanumeric, datestamp must be either ISO 8601 format (YYYY-MM-DDThh:mm:ss) or 'now'")
@@ -123,7 +125,7 @@ def html_location(location, time):
     except UnauthenticatedException as e:
         return error_page(500, "Unhandled exception")
     return Response(
-        flask.render_template("location.html", services=services, time=time, location=location, message=None, notes=notes, format_time=format_time),
+        flask.render_template("location.html", board=board, time=time, location=location, message=None, notes=notes, format_time=format_time),
         status=200,
         mimetype="text/html"
         )

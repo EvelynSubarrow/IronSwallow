@@ -96,6 +96,26 @@ def location_dict(row, preserve_null_times=False, preserve_null_platform=False):
 
 def station_board(cursor, locations, base_dt=None, period=480, limit=15, intermediate_tiploc=None, passenger_only=True):
     locations = tuple([a.upper() for a in locations])
+    out = OrderedDict()
+
+    cursor.execute("""SELECT tiploc, dict FROM darwin_locations WHERE crs_darwin IN %s OR tiploc IN %s;""", [locations]*2)
+    locations = OrderedDict([(a[0],a[1]) for a in cursor.fetchall()])
+
+    # Whatever location code you gave us, if it doesn't exist, let's not even try to pretend now, go away
+    if not locations:
+        return None
+
+    out["locations"] = locations
+
+    # In principle you can pass in a list of locations with several corresponding CRS codes
+    crs_list_dedup = list(OrderedDict((a["crs_darwin"],0) for a in locations.values()).keys())
+
+    out["messages"] = []
+
+    cursor.execute("SELECT category,severity,suppress,stations,message FROM darwin_messages WHERE stations && %s::VARCHAR(3)[];", (crs_list_dedup,))
+    for row in cursor.fetchall():
+        out["messages"].append(OrderedDict([(a,row[i]) for i,a in enumerate(["category", "severity", "suppress", "stations", "message"])]))
+
     stat_select = form_location_select([("base", "b_stat", "b_loc"), ("orig", "o_stat", "o_loc"), ("inter", "i_stat", "i_loc"), ("dest", "d_stat", "d_loc")])
     cursor.execute("""SELECT
         sch.uid,sch.rid,sch.rsid,sch.ssd,sch.signalling_id,sch.status,sch.category,sch.operator,
@@ -121,16 +141,16 @@ def station_board(cursor, locations, base_dt=None, period=480, limit=15, interme
         LEFT JOIN darwin_locations AS d_loc ON dest.tiploc=d_loc.tiploc
 
         WHERE base.wtd IS NOT NULL
-        AND (base.tiploc in %s OR base.tiploc in (SELECT tiploc FROM darwin_locations WHERE crs_darwin=%s))
+        AND base.tiploc in %s
         AND base.type in ('IP', 'DT', 'OR')
         AND NOT sch.is_deleted
         AND %s <= base.wtd
         AND %s >= base.wtd
         ORDER BY base.wtd
         LIMIT %s;""".format(stat_select), (
-        intermediate_tiploc, *[locations]*2, base_dt, base_dt+datetime.timedelta(minutes=period), limit))
+        intermediate_tiploc, tuple(locations.keys()), base_dt, base_dt+datetime.timedelta(minutes=period), limit))
 
-    services = []
+    out["services"] = []
 
     for row in cursor.fetchall():
         # Reverse so popping will retrieve from the front
@@ -142,9 +162,9 @@ def station_board(cursor, locations, base_dt=None, period=480, limit=15, interme
         for location_name in ("here", "origin", "intermediate", "destination"):
             out_row[location_name] = location_dict(row)
 
-        services.append(out_row)
+        out["services"].append(out_row)
 
-    return services
+    return out
 
 def service(cursor, sid, date=None):
     cursor.execute("""SELECT sch.uid,sch.rid,sch.rsid,sch.ssd,sch.signalling_id,sch.status,sch.category,sch.operator,
