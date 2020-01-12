@@ -88,7 +88,7 @@ def json_service(id, date):
         return Response(json.dumps(struct, indent=2, default=query.json_default), mimetype="application/json", status=status)
     except ValueError as e:
         status, failure_message = 400, "/<rid> requires a valid RID, /<uid>/<date> requires a valid UID, and a ISO 8601 date, or 'now'"
-    except ValueError as e:
+    except Exception as e:
         if not failure_message:
             status, failure_message = 500, "Unhandled exception"
     return Response(json.dumps({"success": False, "message":failure_message}, indent=2), mimetype="application/json", status=status)
@@ -122,10 +122,47 @@ def html_location(location, time):
         return error_page(400, "Location names must be alphanumeric, datestamp must be either ISO 8601 format (YYYY-MM-DDThh:mm:ss) or 'now'")
     except UnauthenticatedException as e:
         return error_page(403, "Unauthenticated")
-    except UnauthenticatedException as e:
+    except Exception as e:
         return error_page(500, "Unhandled exception")
     return Response(
         flask.render_template("location.html", board=board, time=time, location=location, message=None, notes=notes, format_time=format_time),
+        status=200,
+        mimetype="text/html"
+        )
+
+@app.route('/service/<id>', defaults={"date": None})
+@app.route('/service/<id>/<date>')
+@app.route('/s/<id>', defaults={"date": None})
+@app.route('/s/<id>/<date>')
+def html_service(id, date):
+    try:
+        if not id.isalnum(): raise ValueError
+
+        notes = []
+
+        if date in ["now", "today"]:
+            date = datetime.datetime.now().date()
+        elif date!=None:
+            date = datetime.datetime.strptime(date, "%Y-%m-%d").date()
+
+        with get_cursor() as c:
+            last_retrieved = query.last_retrieved(c)
+            if not last_retrieved or (datetime.datetime.now()-last_retrieved).seconds > 300:
+                notes.append("Last Darwin message was parsed more than five minutes ago, information is likely out of date.")
+
+            schedule=query.service(c, id, date)
+
+            if not schedule:
+                return error_page(404, "No such service is known")
+
+    except ValueError as e:
+        return error_page(400, "/<rid> requires a valid RID, /<uid>/<date> requires a valid UID, and a ISO 8601 date, or 'now'")
+    except UnauthenticatedException as e:
+        return error_page(403, "Unauthenticated")
+    except Exception as e:
+        return error_page(500, "Unhandled exception")
+    return Response(
+        flask.render_template("schedule.html", schedule=schedule, date=date, message=None, notes=notes, format_time=format_time),
         status=200,
         mimetype="text/html"
         )

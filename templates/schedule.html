@@ -1,0 +1,74 @@
+{% extends "layout.html" %}
+{% block title %}{{schedule["uid"]}}{% endblock %}
+{% block content %}
+        {% if message %}
+            <section class="message">{{message}}</section>
+        {% endif %}
+        {% if schedule -%}
+        {% for note in notes %}
+            <section>
+                <h1>Query notes</h1>
+                <div class="note">{{ note }}</div>
+            </section>
+        {% endfor %}
+            <table>
+                <tr class="headrow">
+                    <th colspan="4" class="headgroup"></th>
+                    <th colspan="3" class="headgroup">WTT</th>
+                    <th colspan="3" class="headgroup">Darwin</th>
+                    <th colspan="1" class="headgroup"></th>
+                </tr>
+                <tr class="headrow row-overflow">
+                    <th class="borderleft">TIPLOC</th>
+                    <th>CRS</th>
+                    <th>Name</th>
+                    <th class="borderleft borderright">Pl</th>
+                    <th class="borderleft">Arr</th>
+                    <th>Dep</th>
+                    <th class="borderright">Pass</th>
+                    <th class="borderleft">Arr</th>
+                    <th class="borderright">Dep</th>
+                    <th class="borderright">Pass</th>
+                    <th class="borderleft borderright">Activity</th>
+                </tr>
+            {% for location in schedule["locations"] -%}
+                <tr class="primaryrow {{ "pass" if location["times"]["pass"] else ""}}">
+                    <td class="tiploc borderleft">{{location["tiploc"]}}</td>
+                    <td class="crs">{{ location["crs_darwin"] or "" }}</td>
+                    <td class="locname">{{location["name_full"]}}</td>
+                    <td class="platform borderleft borderright"> {{location["platform"].get("platform", '')}}
+                   <td class="time borderleft">{{   format_time(location["times"]["arrival"], "w")   }}</td>
+                    <td class="time">{{             format_time(location["times"]["pass"], "w")      }}</td>
+                    <td class="time borderright">{{ format_time(location["times"]["departure"], "w") }}</td>
+                    <td class="time borderleft">{{  format_time(location["times"]["arrival"],   ".") }}</td>
+                    <td class="time">{{             format_time(location["times"]["pass"],   ".") }}</td>
+                    <td class="time borderright">{{ format_time(location["times"]["departure"], ".") }}</td>
+
+                    <td class="activities borderleft borderright">{{ location["activity"] }}</td>
+                </tr>
+            {% if location.get("associations") %}
+                <tr>
+                    <td class="associations" colspan="16">
+                        <table class="associations">
+            {% for association in location["associations"] %}
+                            <tr>
+                                <td class="assoc_assoc borderright">{{ association["from"]*"←" or "→" }}</td>
+                                <td class="stp borderleft">{{ disambiguate("stp", association["stp"]) |safe }}</td>
+                                <td class="category borderleft">{{ association["category"] }}</td>
+                                <td class="assoc_type borderright">{{ association["type"] }}</td>
+                                <td class="uid borderleft">{{ association["uid_assoc"] }}</td>
+                                <td class="assoc_direction">{{ association["direction"]*"from" or "to" }}</td>
+                                <td class="tiploc">{{ association["far_tiploc"] }}</td>
+                                <td class="crs">{{ association["far_crs"] or ''}}</td>
+                                <td class="locname">{{ association["far_name"] }}</td>
+                            </tr>
+            {% endfor %}
+                        </table>
+                    </td>
+                </tr>
+            {% endif  %}
+
+            {% endfor %}
+            </table>
+        {% endif -%}
+{% endblock %}
