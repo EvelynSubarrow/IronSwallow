@@ -4,9 +4,24 @@
         {% if message %}
             <section class="message">{{message}}</section>
         {% endif %}
-        {% for note in notes %}
-            <section class="note">{{ note }}</section>
-        {% endfor %}
+        {% if notes %}
+            <section>
+                <h1>Query messages</h1>
+            {% for note in notes %}
+                <div class="note">{{ note }}</div>
+            {% endfor %}
+            </section>
+        {% endif %}
+        {% if board["messages"] %}
+            <section>
+                <h1>Darwin messages</h1>
+                {% for message in board["messages"] %}
+                <div class="note">{{ message["message"] |safe}}</div>
+                {% endfor %}
+            </section>
+        {% endif %}
+            <section>
+                <h1>Services</h1>
             <table>
                 <tr class="headrow">
                     <th colspan="2" class="headgroup"></th>
@@ -48,7 +63,7 @@
                     <td class="time">{{             format_time(schedule["here"]["times"]["pass"],   ".") }}</td>
                     <td class="time borderright">{{ format_time(schedule["here"]["times"]["departure"], ".") }}</td>
                     <td class="activities borderleft borderright">{{ schedule["here"]["activity"] }}</td>
-                    <td class="uid borderleft">{{ schedule["uid"] }}</td>
+                    <td class="uid borderleft"><a href="/j/s/{{schedule["rid"]}}">{{ schedule["uid"] }}</a></td>
                     <td>{{ schedule["signalling_id"] or '' }}</td>
                     <td>{{ schedule["category"] }}</td>
                     <td>{{ schedule["operator"] }}</td>
@@ -57,4 +72,5 @@
                 </tr>
             {% endfor %}
             </table>
+            </section>
 {% endblock %}
