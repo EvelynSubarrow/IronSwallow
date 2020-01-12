@@ -32,7 +32,7 @@
                     <th class="borderleft borderright">Activity</th>
                 </tr>
             {% for location in schedule["locations"] -%}
-                <tr class="primaryrow {{ "pass" if location["times"]["pass"] else ""}}">
+                <tr class="primaryrow{{ " pass" if location["times"]["pass"] else ''}}{{" cancelled"*location["cancelled"]}}">
                     <td class="tiploc borderleft">{{location["tiploc"]}}</td>
                     <td class="crs">{{ location["crs_darwin"] or "" }}</td>
                     <td class="locname">{{location["name_full"]}}</td>
