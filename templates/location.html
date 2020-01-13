@@ -17,7 +17,7 @@
                 <h1>Darwin messages</h1>
                 {% for message in board["messages"] %}
                 <p class="note">
-                <span class="notehead">{{message["category"]}} {{message["severity"]}}</span>
+                <span class="notehead"><span class="normal">{{message["category"].ljust(11)}}</span> category message, severity <span class="normal">{{message["severity"]}}</span></span>
                 {{ message["message"] |safe}}
                 </p>
                 {% endfor %}

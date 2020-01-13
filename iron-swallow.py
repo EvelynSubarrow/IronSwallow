@@ -26,6 +26,9 @@ def process_time(time):
         time += ":00"
     return datetime.datetime.strptime(time, "%H:%M:%S").time()
 
+def full_original_wt(location):
+    return form_original_wt([process_time(location.get(a)) for a in ("wta", "wtp", "wtd")])
+
 def form_original_wt(times):
     out = ""
     for time in times:
@@ -250,6 +253,9 @@ def store(cursor, parsed):
                     (record["id"], record["cat"], record["sev"], bool(record.get("suppress")), station_list, message))
             else:
                 c.execute("DELETE FROM darwin_messages WHERE message_id=%s;", (record["id"],))
+        if record["tag"]=="association":
+            c.execute("""INSERT INTO darwin_associations VALUES (%s, %s, %s, %s, %s, %s)""",
+                (record["category"], record["tiploc"], record["main"]["rid"], full_original_wt(record["main"]), record["assoc"]["rid"], full_original_wt(record["assoc"])))
 
 class Listener(stomp.ConnectionListener):
     def __init__(self, mq, cursor):

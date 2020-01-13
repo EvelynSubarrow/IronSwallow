@@ -135,3 +135,18 @@ CREATE TABLE darwin_messages (
 
 CREATE INDEX idx_d_message_id on darwin_messages(message_id);
 CREATE INDEX idx_d_message_stations on darwin_messages(message_id);
+
+CREATE TABLE darwin_associations (
+    category              CHAR(2)     NOT NULL,
+    tiploc                VARCHAR(7)  NOT NULL,
+    main_rid              CHAR(15)    NOT NULL,
+    main_original_wt      VARCHAR(18) NOT NULL,
+    assoc_rid             CHAR(15)    NOT NULL,
+    assoc_original_wt     VARCHAR(18) NOT NULL
+);
+
+CREATE INDEX idx_d_assoc_tiploc on darwin_associations(tiploc);
+CREATE INDEX idx_d_assoc_main_rid on darwin_associations(main_rid);
+CREATE INDEX idx_d_assoc_main_original_wt on darwin_associations(main_original_wt);
+CREATE INDEX idx_d_assoc_assoc_rid on darwin_associations(assoc_rid);
+CREATE INDEX idx_d_assoc_assoc_original_wt on darwin_associations(assoc_original_wt);
