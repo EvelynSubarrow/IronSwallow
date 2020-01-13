@@ -16,7 +16,10 @@
             <section>
                 <h1>Darwin messages</h1>
                 {% for message in board["messages"] %}
-                <div class="note">{{ message["message"] |safe}}</div>
+                <p class="note">
+                <span class="notehead">{{message["category"]}} {{message["severity"]}}</span>
+                {{ message["message"] |safe}}
+                </p>
                 {% endfor %}
             </section>
         {% endif %}
@@ -63,11 +66,11 @@
                     <td class="time">{{             format_time(schedule["here"]["times"]["pass"],   ".") }}</td>
                     <td class="time borderright">{{ format_time(schedule["here"]["times"]["departure"], ".") }}</td>
                     <td class="activities borderleft borderright">{{ schedule["here"]["activity"] }}</td>
-                    <td class="uid borderleft"><a href="/j/s/{{schedule["rid"]}}">{{ schedule["uid"] }}</a></td>
+                    <td class="uid borderleft"><a href="/s/{{schedule["rid"]}}">{{ schedule["uid"] }}</a></td>
                     <td>{{ schedule["signalling_id"] or '' }}</td>
                     <td>{{ schedule["category"] }}</td>
                     <td>{{ schedule["operator"] }}</td>
-                    <td class="origin borderleft {{"cancelled" if schedule["origin"]["cancelled"] else ''}}"><a href="/d/{{schedule["origin"]["tiploc"]}}">{{ schedule["origin"]["name_full"] }}</a></td>
+                    <td class="origin borderleft {{"cancelled" if schedule["origin"]["cancelled"] else ''}}">{{ schedule["origin"]["name_full"] }}</td>
                     <td class="destination borderright {{"cancelled" if schedule["origin"]["cancelled"] else ''  }}"><a href="/d/{{schedule["destination"]["tiploc"]}}">{{ schedule["destination"]["name_full"] }}</a></td>
                 </tr>
             {% endfor %}
