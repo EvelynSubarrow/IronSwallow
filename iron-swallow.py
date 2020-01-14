@@ -254,8 +254,14 @@ def store(cursor, parsed):
             else:
                 c.execute("DELETE FROM darwin_messages WHERE message_id=%s;", (record["id"],))
         if record["tag"]=="association":
-            c.execute("""INSERT INTO darwin_associations VALUES (%s, %s, %s, %s, %s, %s)""",
-                (record["category"], record["tiploc"], record["main"]["rid"], full_original_wt(record["main"]), record["assoc"]["rid"], full_original_wt(record["assoc"])))
+            if record["category"]=="JJ":
+                # Semantically it makes a lot more sense to invert joins, so that all associations point to the "next" service
+                # JN should hopefully make this distinct from JJ
+                c.execute("""INSERT INTO darwin_associations VALUES (%s, %s, %s, %s, %s, %s)""",
+                    ("JN", record["tiploc"], record["assoc"]["rid"], full_original_wt(record["assoc"]), record["main"]["rid"], full_original_wt(record["main"])))
+            else:
+                c.execute("""INSERT INTO darwin_associations VALUES (%s, %s, %s, %s, %s, %s)""",
+                    (record["category"], record["tiploc"], record["main"]["rid"], full_original_wt(record["main"]), record["assoc"]["rid"], full_original_wt(record["assoc"])))
 
 class Listener(stomp.ConnectionListener):
     def __init__(self, mq, cursor):
