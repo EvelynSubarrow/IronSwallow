@@ -181,7 +181,37 @@ def service(cursor, sid, date=None):
         for key in ["uid", "rid", "rsid", "ssd", "signalling_id", "status", "category", "operator", "is_active", "is_charter", "is_passenger"]:
             schedule[key] = row.pop()
 
-        cursor.execute("""SELECT {} FROM darwin_schedule_locations as loc
+        # Associations are rather tricky customers, the select is straightforward enough
+        cursor.execute("""SELECT category,darwin_associations.tiploc,main_rid,main_original_wt,assoc_rid,assoc_original_wt, {}
+            FROM darwin_associations
+            LEFT JOIN darwin_schedule_locations AS o_loc  ON o_loc.rid=main_rid   AND o_loc.type='OR'
+            LEFT JOIN darwin_schedule_status    AS o_stat ON o_stat.rid=main_rid  AND o_stat.original_wt=o_loc.original_wt
+            LEFT JOIN darwin_locations          AS o_ol   ON o_ol.tiploc=o_loc.tiploc
+            LEFT JOIN darwin_schedule_locations AS d_loc  ON d_loc.rid=assoc_rid  AND d_loc.type='DT'
+            LEFT JOIN darwin_schedule_status    AS d_stat ON d_stat.rid=assoc_rid AND d_stat.original_wt=d_loc.original_wt
+            LEFT JOIN darwin_locations          AS d_ol   ON d_ol.tiploc=d_loc.tiploc
+
+            WHERE main_rid=%s OR assoc_rid=%s;""".format(form_location_select([("o_loc", "o_stat", "o_ol"), ("d_loc", "d_stat", "d_ol")])), [schedule["rid"]]*2)
+
+        associations = OrderedDict()
+        for row in cursor.fetchall():
+            row = list(row)[::-1]
+            association = OrderedDict([(a, row.pop()) for a in ("category", "tiploc")])
+
+            for association_type in ("main", "assoc"):
+                association[association_type] = OrderedDict([(a,row.pop()) for a in ("rid", "original_wt")])
+            for association_type in ("main", "assoc"):
+                association[association_type]["there"] = location_dict(row)
+
+            # This is the tricky part - main should always relate to *this* schedule, and 'assoc' the other
+            association["from"]=association["assoc"]["rid"]==schedule["rid"]
+            if association["from"]:
+                association["main"],association["assoc"] = association["assoc"],association["main"]
+
+            for assoc_type in ("main", "assoc"):
+                associations[(association["tiploc"], association[assoc_type]["original_wt"])] = association
+
+        cursor.execute("""SELECT loc.original_wt, {} FROM darwin_schedule_locations as loc
             LEFT JOIN darwin_schedule_status AS stat ON loc.rid=stat.rid AND loc.original_wt=stat.original_wt
             LEFT JOIN darwin_locations AS loc_outline ON loc.tiploc=loc_outline.tiploc
             WHERE loc.rid=%s ORDER BY INDEX ASC;
@@ -191,7 +221,12 @@ def service(cursor, sid, date=None):
 
         for row in cursor.fetchall():
             row = list(row)[::-1]
-            schedule["locations"].append(location_dict(row))
+
+            original_wt = row.pop()
+            location = location_dict(row)
+            location["association"] = associations.get((location["tiploc"],original_wt))
+
+            schedule["locations"].append(location)
 
         return schedule
 
