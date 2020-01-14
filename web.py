@@ -61,8 +61,13 @@ def json_departures(location, time):
             time = datetime.datetime.strptime(time, "%Y-%m-%dT%H:%M:%S")
 
         with get_cursor() as c:
-            struct=query.station_board(c, (location,), time, period=500)
-        return Response(json.dumps(struct, indent=2, default=query.json_default), mimetype="application/json", status=status)
+            struct = OrderedDict([("success", True), ("message", None)])
+            struct["response"] = query.station_board(c, (location,), time, period=500)
+
+        if struct["response"]:
+            return Response(json.dumps(struct, indent=2, default=query.json_default), mimetype="application/json", status=status)
+        else:
+            status, failure_message = 404, "Location(s) not found"
     except ValueError as e:
         status, failure_message = 400, "Location codes must be alphanumeric, and the only permitted time is 'now'... for now"
     except ValueError as e:
@@ -84,8 +89,13 @@ def json_service(id, date):
         elif date!=None:
             date = datetime.datetime.strptime(date, "%Y-%m-%d").date()
         with get_cursor() as c:
-            struct=query.service(c, id, date)
-        return Response(json.dumps(struct, indent=2, default=query.json_default), mimetype="application/json", status=status)
+            struct = OrderedDict([("success", True), ("message", None)])
+            struct["response"] = query.service(c, id, date)
+
+        if struct["response"]:
+            return Response(json.dumps(struct, indent=2, default=query.json_default), mimetype="application/json", status=status)
+        else:
+            status,failure_message = 404, "Schedule not found"
     except ValueError as e:
         status, failure_message = 400, "/<rid> requires a valid RID, /<uid>/<date> requires a valid UID, and a ISO 8601 date, or 'now'"
     except Exception as e:
