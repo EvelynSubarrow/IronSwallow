@@ -71,7 +71,7 @@
                     <td>{{ schedule["category"] }}</td>
                     <td>{{ schedule["operator"] }}</td>
                     <td class="origin borderleft {{"cancelled" if schedule["origin"]["cancelled"] else ''}}">{{ schedule["origin"]["name_full"] }}</td>
-                    <td class="destination borderright {{"cancelled" if schedule["origin"]["cancelled"] else ''  }}"><a href="/d/{{schedule["destination"]["tiploc"]}}">{{ schedule["destination"]["name_full"] }}</a></td>
+                    <td class="destination borderright {{"cancelled" if schedule["destination"]["cancelled"] else ''  }}"><a href="/d/{{schedule["destination"]["tiploc"]}}">{{ schedule["destination"]["name_full"] }}</a></td>
                 </tr>
             {% endfor %}
             </table>
