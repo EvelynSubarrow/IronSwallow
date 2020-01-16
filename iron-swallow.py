@@ -93,23 +93,22 @@ def renew_schedule_meta(c):
     destinations = []
     batch = []
 
-    c.execute("""SELECT type,cancelled,loc.rid,ol.dict FROM darwin_schedule_locations as loc
-        INNER JOIN darwin_locations AS ol ON loc.tiploc=ol.tiploc
+    c.execute("""SELECT type,activity,cancelled,loc.rid,tiploc FROM darwin_schedule_locations as loc
         INNER JOIN darwin_schedules AS s ON s.rid=loc.rid
         WHERE (origins::TEXT[]='{}' OR destinations::TEXT[]='{}')
         AND type='OR' OR type='OPOR' OR type='DT' OR type='OPDT' ORDER BY rid DESC, index ASC;""")
 
     for i,row in enumerate(c.fetchall()):
         row = list(row)[::-1]
-        row = OrderedDict([(a, row.pop()) for a in ("type", "canc", "rid", "location")])
+        row = OrderedDict([(a, row.pop()) for a in ("type", "activity", "canc", "rid", "tiploc")])
         if row["rid"]!=crid:
             batch.append((origins, destinations, crid))
             origins,destinations = [],[]
 
         crid=row["rid"]
 
-        loc_dict = OrderedDict([("source", "SC"), ("type", row["type"]), ("cancelled", row["canc"])])
-        loc_dict.update(row["location"])
+        loc_dict = OrderedDict([("source", "SC"), ("type", row["type"]), ("activity", row["activity"]), ("cancelled", row["canc"])])
+        loc_dict.update(LOCATIONS[row["tiploc"]])
 
         if row["type"][-2:]=="OR":
             origins.append(json.dumps(loc_dict))
@@ -243,7 +242,7 @@ def store(cursor, parsed):
 
                     batch.append((record["rid"], index, location["tag"], location["tpl"], location.get("act", ''), original_wt, *times, bool(location.get("can")), location.get("rdelay", 0)))
 
-                    loc_dict = OrderedDict([("source", "SC"), ("type", location["tag"]), ("cancelled", bool(location.get("can")))])
+                    loc_dict = OrderedDict([("source", "SC"), ("type", location["tag"]), ("activity", location.get("act",'')), ("cancelled", bool(location.get("can")))])
                     loc_dict.update(LOCATIONS[location["tpl"]])
 
                     if location["tag"] in ("OR", "OPOR"):

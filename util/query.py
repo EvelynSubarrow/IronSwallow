@@ -119,7 +119,7 @@ def station_board(cursor, locations, base_dt=None, period=480, limit=15, interme
     stat_select = form_location_select([("base", "b_stat", "b_loc"), ("orig", "o_stat", "o_loc"), ("inter", "i_stat", "i_loc"), ("dest", "d_stat", "d_loc")])
     cursor.execute("""SELECT
         sch.uid,sch.rid,sch.rsid,sch.ssd,sch.signalling_id,sch.status,sch.category,sch.operator,
-        sch.is_active,sch.is_charter,sch.is_passenger,
+        sch.is_active,sch.is_charter,sch.is_passenger,sch.origins,sch.destinations,
 
         {}
 
@@ -156,7 +156,7 @@ def station_board(cursor, locations, base_dt=None, period=480, limit=15, interme
         # Reverse so popping will retrieve from the front
         row = list(row)[::-1]
         out_row = OrderedDict()
-        for key in ["uid", "rid", "rsid", "ssd", "signalling_id", "status", "category", "operator", "is_active", "is_charter", "is_passenger"]:
+        for key in ["uid", "rid", "rsid", "ssd", "signalling_id", "status", "category", "operator", "is_active", "is_charter", "is_passenger", "origins", "destinations"]:
             out_row[key] = row.pop()
 
         for location_name in ("here", "origin", "intermediate", "destination"):
