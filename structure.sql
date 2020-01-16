@@ -12,6 +12,9 @@ CREATE TABLE darwin_schedules(
     is_deleted            BOOL       NOT NULL DEFAULT FALSE,
     is_passenger          BOOL       NOT NULL DEFAULT FALSE,
 
+    origins               JSON ARRAY NOT NULL,
+    destinations          JSON ARRAY NOT NULL,
+
     UNIQUE (uid, ssd),
     UNIQUE (rid),
     PRIMARY KEY (rid)
