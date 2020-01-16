@@ -96,7 +96,7 @@ def renew_schedule_meta(c):
     c.execute("""SELECT type,activity,cancelled,loc.rid,tiploc FROM darwin_schedule_locations as loc
         INNER JOIN darwin_schedules AS s ON s.rid=loc.rid
         WHERE (origins::TEXT[]='{}' OR destinations::TEXT[]='{}')
-        AND type='OR' OR type='OPOR' OR type='DT' OR type='OPDT' ORDER BY rid DESC, index ASC;""")
+        AND (type='OR' OR type='OPOR' OR type='DT' OR type='OPDT') ORDER BY rid DESC, index ASC;""")
 
     for i,row in enumerate(c.fetchall()):
         row = list(row)[::-1]
