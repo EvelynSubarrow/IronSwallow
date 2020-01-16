@@ -86,7 +86,7 @@ def incorporate_reference_data(c):
     c.execute("COMMIT;")
 
 def renew_schedule_meta(c):
-    log.info("Precomputing origin/destination lists for schedules. This may take a while.")
+    log.info("Precomputing origin/destination lists for schedules")
 
     crid = None
     origins = []
