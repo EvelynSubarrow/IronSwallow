@@ -38,6 +38,8 @@ def form_original_wt(times):
             out += "      "
     return out
 
+LOCATIONS = {}
+
 def incorporate_reference_data(c):
     strip = lambda x: x.rstrip() or None if x else None
     case = lambda x: x.title() if x else x
@@ -79,7 +81,48 @@ def incorporate_reference_data(c):
                     loc["name_short"], loc["name_full"],
                     json.dumps(loc)))
 
+            LOCATIONS[reference["tpl"]] = loc
+
     c.execute("COMMIT;")
+
+def renew_schedule_meta(c):
+    log.info("Precomputing origin/destination lists for schedules. This may take a while.")
+
+    crid = None
+    origins = []
+    destinations = []
+    batch = []
+
+    c.execute("""SELECT type,cancelled,loc.rid,ol.dict FROM darwin_schedule_locations as loc
+        INNER JOIN darwin_locations AS ol ON loc.tiploc=ol.tiploc
+        INNER JOIN darwin_schedules AS s ON s.rid=loc.rid
+        WHERE (origins::TEXT[]='{}' OR destinations::TEXT[]='{}')
+        AND type='OR' OR type='OPOR' OR type='DT' OR type='OPDT' ORDER BY rid DESC, index ASC;""")
+
+    for i,row in enumerate(c.fetchall()):
+        row = list(row)[::-1]
+        row = OrderedDict([(a, row.pop()) for a in ("type", "canc", "rid", "location")])
+        if row["rid"]!=crid:
+            batch.append((origins, destinations, crid))
+            origins,destinations = [],[]
+
+        crid=row["rid"]
+
+        loc_dict = OrderedDict([("source", "SC"), ("type", row["type"]), ("cancelled", row["canc"])])
+        loc_dict.update(row["location"])
+
+        if row["type"][-2:]=="OR":
+            origins.append(json.dumps(loc_dict))
+        elif row["type"][-2:]=="DT":
+            destinations.append(json.dumps(loc_dict))
+
+        if not i%100:
+            psycopg2.extras.execute_batch(c, "UPDATE darwin_schedules SET (origins,destinations)=(%s::json[],%s::json[]) WHERE rid=%s;", batch)
+            batch = []
+
+    psycopg2.extras.execute_batch(c, "UPDATE darwin_schedules SET (origins,destinations)=(%s::json[],%s::json[]) WHERE rid=%s;", batch)
+
+    log.info("Precompution of origin/destination lists completed")
 
 def incorporate_ftp(c):
     ftp = ftplib.FTP(SECRET["ftp-hostname"])
@@ -163,21 +206,13 @@ def store(cursor, parsed):
 
     for record in parsed.get("list", []):
         if record["tag"]=="schedule":
-            c.execute("""INSERT INTO darwin_schedules VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                ON CONFLICT (rid) DO UPDATE SET
-                signalling_id=EXCLUDED.signalling_id, status=EXCLUDED.status, category=EXCLUDED.category,
-                operator=EXCLUDED.operator, is_active=EXCLUDED.is_active, is_charter=EXCLUDED.is_charter,
-                is_deleted=EXCLUDED.is_deleted, is_passenger=EXCLUDED.is_passenger;""", (
-                record["uid"], record["rid"], record.get("rsid"), record["ssd"], record["trainId"],
-                record.get("status") or "P", record.get("trainCat") or "OO", record["toc"], record.get("isActive") or True,
-                bool(record.get("isCharter")), bool(record.get("deleted")), record.get("isPassengerSvc") or True,
-                ))
 
             index = 0
             last_time, ssd_offset = None, 0
 
             c.execute("DELETE FROM darwin_schedule_locations WHERE rid=%s;", (record["rid"],))
 
+            origins, destinations = [], []
             batch = []
 
             for location in record["list"]:
@@ -208,7 +243,26 @@ def store(cursor, parsed):
 
                     batch.append((record["rid"], index, location["tag"], location["tpl"], location.get("act", ''), original_wt, *times, bool(location.get("can")), location.get("rdelay", 0)))
 
+                    loc_dict = OrderedDict([("source", "SC"), ("type", location["tag"]), ("cancelled", bool(location.get("can")))])
+                    loc_dict.update(LOCATIONS[location["tpl"]])
+
+                    if location["tag"] in ("OR", "OPOR"):
+                        origins.append(json.dumps(loc_dict))
+                    if location["tag"] in ("DT", "OPDT"):
+                        destinations.append(json.dumps(loc_dict))
+
                     index += 1
+
+            c.execute("""INSERT INTO darwin_schedules VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s::json[], %s::json[])
+                ON CONFLICT (rid) DO UPDATE SET
+                signalling_id=EXCLUDED.signalling_id, status=EXCLUDED.status, category=EXCLUDED.category,
+                operator=EXCLUDED.operator, is_active=EXCLUDED.is_active, is_charter=EXCLUDED.is_charter,
+                is_deleted=EXCLUDED.is_deleted, is_passenger=EXCLUDED.is_passenger, origins=EXCLUDED.origins, destinations=EXCLUDED.destinations;""", (
+                record["uid"], record["rid"], record.get("rsid"), record["ssd"], record["trainId"],
+                record.get("status") or "P", record.get("trainCat") or "OO", record["toc"], record.get("isActive") or True,
+                bool(record.get("isCharter")), bool(record.get("deleted")), record.get("isPassengerSvc") or True,
+                origins, destinations
+                ))
 
             psycopg2.extras.execute_batch(c, """INSERT INTO darwin_schedule_locations VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT DO NOTHING;""", batch)
 
@@ -334,7 +388,10 @@ if __name__ == "__main__":
         mq.set_listener('iron-swallow', Listener(mq, cursor))
         connect_and_subscribe(mq)
 
+        with db_connection.new_cursor() as c2:
+            renew_schedule_meta(c2)
+
         while True:
             sleep(3600*12)
-            with db_connection.new_cursor() as c2:
-                incorporate_reference_data(c2)
+            with db_connection.new_cursor() as c3:
+                incorporate_reference_data(c3)
