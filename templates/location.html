@@ -70,8 +70,16 @@
                     <td>{{ schedule["signalling_id"] or '' }}</td>
                     <td>{{ schedule["category"] }}</td>
                     <td>{{ schedule["operator"] }}</td>
-                    <td class="origin borderleft {{"cancelled" if schedule["origin"]["cancelled"] else ''}}">{{ schedule["origin"]["name_full"] }}</td>
-                    <td class="destination borderright {{"cancelled" if schedule["destination"]["cancelled"] else ''  }}"><a href="/d/{{schedule["destination"]["tiploc"]}}">{{ schedule["destination"]["name_full"] }}</a></td>
+                    <td class="origin borderleft">
+                        {% for origin in schedule["origins"] %}
+                            <span class="{{"cancelled" if origin["cancelled"] else ''}}">{{origin["name_full"]}}</span><br>
+                        {% endfor %}
+                    </td>
+                    <td class="destination borderright">
+                        {% for destination in schedule["destinations"] %}
+                            <span class="{{"cancelled" if destination["cancelled"] else ''}}"><a href="/d/{{destination["tiploc"]}}">{{destination["name_full"]}}</a></span><br>
+                        {% endfor %}
+                    </td>
                 </tr>
             {% endfor %}
             </table>
