@@ -86,7 +86,7 @@ def incorporate_reference_data(c):
     c.execute("COMMIT;")
 
 def renew_schedule_meta(c):
-    log.info("Precomputing origin/destination lists for schedules")
+    log.info("Computing origin/destination lists for schedules")
 
     crid = None
     origins = []
@@ -387,10 +387,9 @@ if __name__ == "__main__":
         mq.set_listener('iron-swallow', Listener(mq, cursor))
         connect_and_subscribe(mq)
 
-        with db_connection.new_cursor() as c2:
-            renew_schedule_meta(c2)
-
         while True:
+            with db_connection.new_cursor() as c2:
+                renew_schedule_meta(c2)
             sleep(3600*12)
             with db_connection.new_cursor() as c3:
                 incorporate_reference_data(c3)
