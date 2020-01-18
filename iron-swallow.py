@@ -85,6 +85,41 @@ def incorporate_reference_data(c):
 
     c.execute("COMMIT;")
 
+def renew_schedule_association_meta(c, main_rid=None, assoc_rid=None):
+    if main_rid and assoc_rid:
+        c.execute("""SELECT a.category,tiploc,s1.rid,s1.origins,s1.destinations,s2.rid,s2.origins,s2.destinations
+            FROM darwin_associations AS a
+            INNER JOIN darwin_schedules AS s1 on s1.rid=a.main_rid
+            INNER JOIN darwin_schedules AS s2 on s2.rid=a.assoc_rid
+            WHERE a.category!='NP' AND main_rid=%s AND assoc_rid=%s;""", (main_rid, assoc_rid))
+    else:
+        c.execute("""SELECT a.category,tiploc,s1.rid,s1.origins,s1.destinations,s2.rid,s2.origins,s2.destinations
+            FROM darwin_associations AS a
+            INNER JOIN darwin_schedules AS s1 on s1.rid=a.main_rid
+            INNER JOIN darwin_schedules AS s2 on s2.rid=a.assoc_rid
+            WHERE a.category!='NP';""")
+
+    for row in c.fetchall():
+        row = list(row)[::-1]
+        row = OrderedDict([(a, row.pop()) for a in ("category", "tiploc", "main_rid", "main_origins", "main_destinations", "assoc_rid", "assoc_origins", "assoc_destinations")])
+
+        for location in row["assoc_destinations"]:
+            location["association_tiploc"] = row["tiploc"]
+            location["source"] = row["category"]
+
+        for location in row["main_origins"]:
+            location["association_tiploc"] = row["tiploc"]
+            location["source"] = row["category"]
+
+        row["main_origins"] = [json.dumps(a) for a in row["main_origins"]]
+        row["assoc_destinations"] = [json.dumps(a) for a in row["assoc_destinations"]]
+
+        if not any([a.get("association_tiploc")==row["tiploc"] and a["category"]==row["category"] for a in row["main_destinations"]]):
+            c.execute("""UPDATE darwin_schedules SET (destinations)=(darwin_schedules.destinations || %s::json[]) WHERE rid=%s;""", (row["assoc_destinations"], row["main_rid"]))
+
+        if not any([a.get("association_tiploc")==row["tiploc"] and a["category"]==row["category"] for a in row["assoc_origins"]]):
+            c.execute("""UPDATE darwin_schedules SET (origins)=(darwin_schedules.origins || %s::json[]) WHERE rid=%s;""", (row["main_origins"],row["assoc_rid"]))
+
 def renew_schedule_meta(c):
     log.info("Computing origin/destination lists for schedules")
 
@@ -120,7 +155,9 @@ def renew_schedule_meta(c):
 
     psycopg2.extras.execute_batch(c, "UPDATE darwin_schedules SET (origins,destinations)=(%s::json[],%s::json[]) WHERE rid=%s;", batch)
 
-    log.info("Precompution of origin/destination lists completed")
+    log.info("Precompution of origin/destination lists completed, adding associations")
+    renew_schedule_association_meta(c)
+    log.info("All origin and destination lists have been completed")
 
 def incorporate_ftp(c):
     ftp = ftplib.FTP(SECRET["ftp-hostname"])
@@ -208,6 +245,7 @@ def store(cursor, parsed):
             index = 0
             last_time, ssd_offset = None, 0
 
+            c.execute("DELETE FROM darwin_associations WHERE main_rid=%s OR assoc_rid=%s;", ([record["rid"]]*2))
             c.execute("DELETE FROM darwin_schedule_locations WHERE rid=%s;", (record["rid"],))
 
             origins, destinations = [], []
@@ -314,6 +352,9 @@ def store(cursor, parsed):
             else:
                 c.execute("""INSERT INTO darwin_associations VALUES (%s, %s, %s, %s, %s, %s)""",
                     (record["category"], record["tiploc"], record["main"]["rid"], full_original_wt(record["main"]), record["assoc"]["rid"], full_original_wt(record["assoc"])))
+
+            # Make sure origin/dest lists are updated as appropriate
+            renew_schedule_association_meta(c, record["main"]["rid"], record["assoc"]["rid"])
 
 class Listener(stomp.ConnectionListener):
     def __init__(self, mq, cursor):
