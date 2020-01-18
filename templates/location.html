@@ -58,7 +58,7 @@
             {% for schedule in board["services"] -%}
                 <tr class="primaryrow {{ "pass" if schedule["here"]["times"]["pass"] else ""}} {{ "as-required" if "Q" in "" else "" }}{{" cancelled"*schedule["here"]["cancelled"] }}">
                     <td class="tiploc borderleft">{{ schedule["here"]["tiploc"] }}</td>
-                    <td class="platform borderleft borderright"> {{ (schedule["here"]["platform"].get("platform") or "") + (schedule["here"]["platform"].get("confirmed",False)*"." or "")}}</td>
+                    <td class="platform borderleft borderright"> {{ (schedule["here"]["platform"].get("suppressed",False)*"*" or ' ') + (schedule["here"]["platform"].get("platform") or "") + (schedule["here"]["platform"].get("confirmed",False)*"." or "")}}</td>
                     <td class="time borderleft">{{  format_time(schedule["here"]["times"]["arrival"], "w")   }}</td>
                     <td class="time">{{ format_time(schedule["here"]["times"]["pass"], "w")      }}</td>
                     <td class="time borderright">{{ format_time(schedule["here"]["times"]["departure"], "w") }}</td>
