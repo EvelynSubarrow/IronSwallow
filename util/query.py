@@ -209,7 +209,10 @@ def service(cursor, sid, date=None):
                 association["main"],association["assoc"] = association["assoc"],association["main"]
 
             for assoc_type in ("main", "assoc"):
-                associations[(association["tiploc"], association[assoc_type]["original_wt"])] = association
+                key = (association["tiploc"], association[assoc_type]["original_wt"])
+                if key not in associations:
+                    associations[key] = []
+                associations[key].append(association)
 
         cursor.execute("""SELECT loc.original_wt, {} FROM darwin_schedule_locations as loc
             LEFT JOIN darwin_schedule_status AS stat ON loc.rid=stat.rid AND loc.original_wt=stat.original_wt
@@ -224,7 +227,7 @@ def service(cursor, sid, date=None):
 
             original_wt = row.pop()
             location = location_dict(row)
-            location["association"] = associations.get((location["tiploc"],original_wt))
+            location["associations"] = associations.get((location["tiploc"],original_wt), [])
 
             schedule["locations"].append(location)
 
