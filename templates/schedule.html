@@ -46,23 +46,23 @@
 
                     <td class="activities borderleft borderright">{{ location["activity"] }}</td>
                 </tr>
-            {% if location.get("association") %}
+            {% for association in location["associations"] %}
                 <tr>
                     <td class="associations" colspan="16">
                         <table class="associations">
                             <tr>
-                                <td class="assoc_assoc borderright">{{ location["association"]["from"]*"←" or "→" }}</td>
-                                <td class="category borderleft">{{ location["association"]["category"] }}</td>
-                                <td class="uid borderleft">{{ location["association"]["assoc"]["rid"] }}</td>
-                                <td class="assoc_direction">{{ location["association"]["from"]*"←" or "→" }}</td>
-                                <td class="tiploc">{{ location["association"]["assoc"]["there"]["tiploc"] }}</td>
-                                <td class="crs">{{ location["association"]["assoc"]["there"]["crs_darwin"] or ''}}</td>
-                                <td class="locname">{{ location["association"]["assoc"]["there"]["name_full"] }}</td>
+                                <td class="assoc_assoc borderright">{{ association["from"]*"←" or "→" }}</td>
+                                <td class="category borderleft">{{ association["category"] }}</td>
+                                <td class="uid borderleft">{{ association["assoc"]["rid"] }}</td>
+                                <td class="assoc_direction">{{ association["from"]*"←" or "→" }}</td>
+                                <td class="tiploc">{{ association["assoc"]["there"]["tiploc"] }}</td>
+                                <td class="crs">{{ association["assoc"]["there"]["crs_darwin"] or ''}}</td>
+                                <td class="locname">{{ association["assoc"]["there"]["name_full"] }}</td>
                             </tr>
                         </table>
                     </td>
                 </tr>
-            {% endif  %}
+            {% endfor  %}
 
             {% endfor %}
             </table>
