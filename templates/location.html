@@ -26,7 +26,7 @@
             <section>
                 <h1>Services</h1>
             <table>
-                <tr class="headrow">
+                <tr class="headrow horizontal-only">
                     <th colspan="2" class="headgroup"></th>
                     <th colspan="3" class="headgroup">WTT</th>
                     <th colspan="3" class="headgroup">Darwin</th>
@@ -40,9 +40,9 @@
                     <th>Pass</th>
                     <th class="borderright">Dep.</th>
 
-                    <th class="borderleft">Arr.</th>
-                    <th>Pass</th>
-                    <th class="borderright">Dep.</th>
+                    <th class="borderleft horizontal-only">Arr.</th>
+                    <th class="horizontal-only">Pass</th>
+                    <th class="borderright horizontal-only">Dep.</th>
 
                     <th class="borderleft borderright">Activity</th>
 
@@ -59,12 +59,21 @@
                 <tr class="primaryrow {{ "pass" if schedule["here"]["times"]["pass"] else ""}} {{ "as-required" if "Q" in "" else "" }}{{" cancelled"*schedule["here"]["cancelled"] }}">
                     <td class="tiploc borderleft">{{ schedule["here"]["tiploc"] }}</td>
                     <td class="platform borderleft borderright"> {{ (schedule["here"]["platform"].get("suppressed",False)*"*" or ' ') + (schedule["here"]["platform"].get("platform") or "") + (schedule["here"]["platform"].get("confirmed",False)*"." or "")}}</td>
-                    <td class="time borderleft">{{  format_time(schedule["here"]["times"]["arrival"], "w")   }}</td>
-                    <td class="time">{{ format_time(schedule["here"]["times"]["pass"], "w")      }}</td>
-                    <td class="time borderright">{{ format_time(schedule["here"]["times"]["departure"], "w") }}</td>
-                    <td class="time borderleft">{{  format_time(schedule["here"]["times"]["arrival"],   ".") }}</td>
-                    <td class="time">{{             format_time(schedule["here"]["times"]["pass"],   ".") }}</td>
-                    <td class="time borderright">{{ format_time(schedule["here"]["times"]["departure"], ".") }}</td>
+                    <td class="time borderleft">
+                        {{format_time(schedule["here"], "aw")}}
+                        <p class="vertical-only">{{ format_time(schedule["here"], "a.") }}</p>
+                    </td>
+                    <td class="time">
+                        {{ format_time(schedule["here"], "pw")}}
+                        <p class="vertical-only">{{ format_time(schedule["here"], "p.") }}</p>
+                    </td>
+                    <td class="time borderright">
+                        {{ format_time(schedule["here"], "dw") }}
+                        <p class="vertical-only">{{ format_time(schedule["here"], "d.") }}</p>
+                    </td>
+                    <td class="time borderleft horizontal-only">{{  format_time(schedule["here"], "a.") }}</td>
+                    <td class="time horizontal-only">{{             format_time(schedule["here"], "p.") }}</td>
+                    <td class="time borderright horizontal-only">{{ format_time(schedule["here"], "d.") }}</td>
                     <td class="activities borderleft borderright">{{ schedule["here"]["activity"] }}</td>
                     <td class="uid borderleft"><a href="/s/{{schedule["rid"]}}">{{ schedule["uid"] }}</a></td>
                     <td>{{ schedule["signalling_id"] or '' }}</td>

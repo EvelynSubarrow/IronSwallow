@@ -22,9 +22,17 @@ def error_page(code, message):
     return flask.render_template('error.html', messages=["{0} - {1}".format(code, message)]), code
 
 def format_time(dt, part):
-    if part=="w":
+    short = {"a": "arrival", "p": "pass", "d": "departure"}
+    suffix = ""
+    prefix = ""
+
+    dt = dt["times"][short[part[0]]]
+
+    if part[1]=="w":
         dt = dt.get("working")
-    elif part==".":
+        prefix += "s"
+    elif part[1]==".":
+        suffix += "."*bool(dt.get("actual")) or "~"
         dt = dt.get("estimated") or dt.get("actual")
     else:
         raise ValueError()
@@ -32,7 +40,7 @@ def format_time(dt, part):
     if not dt:
         return ""
     else:
-        return dt.strftime("%H%M") + "½"*(dt.second==30)
+        return prefix + dt.strftime("%H%M") + "½"*(dt.second==30) + suffix
 
 @app.route('/')
 def index():

@@ -26,6 +26,11 @@ body
     padding-bottom: 10px;
 }
 
+.vertical-only
+{
+    display:none;
+}
+
 @media (max-aspect-ratio: 1/1)
 {
     .content
@@ -33,6 +38,16 @@ body
         width: 100%;
         margin-left: 0px;
         margin-right: 0px;
+    }
+
+    .horizontal-only
+    {
+        display:none;
+    }
+
+    .vertical-only
+    {
+        display:inherit;
     }
 }
 
