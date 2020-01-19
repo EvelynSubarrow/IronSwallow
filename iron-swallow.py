@@ -245,7 +245,6 @@ def store(cursor, parsed):
             index = 0
             last_time, ssd_offset = None, 0
 
-            c.execute("DELETE FROM darwin_associations WHERE main_rid=%s OR assoc_rid=%s;", ([record["rid"]]*2))
             c.execute("DELETE FROM darwin_schedule_locations WHERE rid=%s;", (record["rid"],))
 
             origins, destinations = [], []
@@ -347,10 +346,10 @@ def store(cursor, parsed):
             if record["category"]=="JJ":
                 # Semantically it makes a lot more sense to invert joins, so that all associations point to the "next" service
                 # JN should hopefully make this distinct from JJ
-                c.execute("""INSERT INTO darwin_associations VALUES (%s, %s, %s, %s, %s, %s)""",
+                c.execute("""INSERT INTO darwin_associations VALUES (%s, %s, %s, %s, %s, %s) ON CONFLICT(tiploc,main_rid,assoc_rid) DO NOTHING;""",
                     ("JN", record["tiploc"], record["assoc"]["rid"], full_original_wt(record["assoc"]), record["main"]["rid"], full_original_wt(record["main"])))
             else:
-                c.execute("""INSERT INTO darwin_associations VALUES (%s, %s, %s, %s, %s, %s)""",
+                c.execute("""INSERT INTO darwin_associations VALUES (%s, %s, %s, %s, %s, %s) ON CONFLICT(tiploc,main_rid,assoc_rid) DO NOTHING;""",
                     (record["category"], record["tiploc"], record["main"]["rid"], full_original_wt(record["main"]), record["assoc"]["rid"], full_original_wt(record["assoc"])))
 
             # Make sure origin/dest lists are updated as appropriate

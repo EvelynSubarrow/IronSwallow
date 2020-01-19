@@ -145,7 +145,8 @@ CREATE TABLE darwin_associations (
     main_rid              CHAR(15)    NOT NULL,
     main_original_wt      VARCHAR(18) NOT NULL,
     assoc_rid             CHAR(15)    NOT NULL,
-    assoc_original_wt     VARCHAR(18) NOT NULL
+    assoc_original_wt     VARCHAR(18) NOT NULL,
+    UNIQUE(tiploc, main_rid, assoc_rid)
 );
 
 CREATE INDEX idx_d_assoc_tiploc on darwin_associations(tiploc);
