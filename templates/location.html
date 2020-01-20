@@ -24,6 +24,23 @@
             </section>
         {% endif %}
             <section>
+                <h1>Locations</h1>
+                <table>
+                    <tr class="headrow">
+                        <th class="borderleft">TIPLOC</th>
+                        <th>CRS</th>
+                        <th class="borderright">Name</th>
+                    </tr>
+                    {% for location in board["locations"].values() %}
+                    <tr>
+                        <td class="tiploc borderleft">{{ location["tiploc"] }}</td>
+                        <td class="crs">{{ location["crs_darwin"] or '' }}</td>
+                        <td class="locname borderright">{{ location["name_full"] }}</td>
+                    </tr>
+                    {% endfor %}
+                </table>
+            </section>
+            <section>
                 <h1>Services</h1>
             <table>
                 <tr class="headrow horizontal-only">
