@@ -37,12 +37,12 @@
                     <td class="crs">{{ location["crs_darwin"] or "" }}</td>
                     <td class="locname">{{location["name_full"]}}</td>
                     <td class="platform borderleft borderright"> {{location["platform"].get("platform", '')}}
-                   <td class="time borderleft">{{   format_time(location["times"]["arrival"], "w")   }}</td>
-                    <td class="time">{{             format_time(location["times"]["pass"], "w")      }}</td>
-                    <td class="time borderright">{{ format_time(location["times"]["departure"], "w") }}</td>
-                    <td class="time borderleft">{{  format_time(location["times"]["arrival"],   ".") }}</td>
-                    <td class="time">{{             format_time(location["times"]["pass"],   ".") }}</td>
-                    <td class="time borderright">{{ format_time(location["times"]["departure"], ".") }}</td>
+                    <td class="time borderleft">{{  format_time(location, "aw") }}</td>
+                    <td class="time">{{             format_time(location, "pw") }}</td>
+                    <td class="time borderright">{{ format_time(location, "dw") }}</td>
+                    <td class="time borderleft">{{  format_time(location, "a.") }}</td>
+                    <td class="time">{{             format_time(location, "p.") }}</td>
+                    <td class="time borderright">{{ format_time(location, "d.") }}</td>
 
                     <td class="activities borderleft borderright">{{ location["activity"] }}</td>
                 </tr>
