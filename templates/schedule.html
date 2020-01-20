@@ -20,7 +20,7 @@
                 </tr>
                 <tr class="headrow row-overflow">
                     <th class="borderleft">TIPLOC</th>
-                    <th>CRS</th>
+                    <th class="horizontal-only">CRS</th>
                     <th>Name</th>
                     <th class="borderleft borderright">Pl</th>
                     <th class="borderleft">Arr.</th>
@@ -34,7 +34,7 @@
             {% for location in schedule["locations"] -%}
                 <tr class="primaryrow{{ " pass" if location["times"]["pass"] else ''}}{{" cancelled"*location["cancelled"]}}">
                     <td class="tiploc borderleft">{{location["tiploc"]}}</td>
-                    <td class="crs">{{ location["crs_darwin"] or "" }}</td>
+                    <td class="crs horizontal-only">{{ location["crs_darwin"] or "" }}</td>
                     <td class="locname">{{location["name_full"]}}</td>
                     <td class="platform borderleft borderright"> {{location["platform"].get("platform", '')}}
                     <td class="time borderleft">{{  format_time(location, "aw") }}</td>
