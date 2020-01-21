@@ -26,22 +26,6 @@ body {
     padding-bottom: 10px;
 }
 
-.vertical-only { display:none; }
-
-@media (max-aspect-ratio: 1/1)
-{
-    .content
-    {
-        width: 100%;
-        margin-left: 0px;
-        margin-right: 0px;
-    }
-
-    .horizontal-only { display:none; }
-
-    .vertical-only { display:inherit; }
-}
-
 header,footer {
     color:#668;
     margin-left: auto;
@@ -54,6 +38,8 @@ header,footer {
     padding-left: 5px;
     font-size: 15pt;
 }
+
+/* input and so on */
 
 .scheduleform {
     margin-left: auto;
@@ -95,6 +81,8 @@ label {
 label :invalid + span { color: #A44; }
 
 label :valid + span { color: #4A4; }
+
+/* content */
 
 .note {
     border-left: 1px solid #663;
@@ -250,3 +238,76 @@ a:visited {
 a:hover, a:active {
     text-decoration: underline;
 }
+
+/* Responsiveness */
+
+.vertical-only { display:none; }
+
+@media (max-aspect-ratio: 1/1)
+{
+    .content
+    {
+        width: 100%;
+        margin-left: 0;
+        margin-right:0;
+        padding-left:0;
+        border-left:none;
+    }
+
+    .horizontal-only { display:none; }
+
+    .vertical-only { display:inherit; }
+
+    /* Tables go away */    
+    .collapse table, 
+    .collapse thead, 
+    .collapse tbody, 
+    .collapse th, 
+    .collapse td, 
+    .collapse tr { 
+        display: block; 
+    }
+ 
+    /* Hide table headers (but not display: none;, for accessibility) */
+    .collapse thead tr,
+    .collapse th { 
+        position: absolute;
+        top: -9999px;
+        left: -9999px;
+    }
+ 
+    .collapse tr {
+        border: 1px solid #ccc;
+        display: grid;
+        grid-template-columns: repeat(3,1fr);
+    }
+ 
+    .collapse td {
+        /* Behave  like a "row" */
+        border: none;
+        position: relative;
+        //padding-left: 50%; 
+        white-space: normal;
+        text-align:left;
+    }
+ 
+    /* Make sure horizontal only is truly dead */
+    .collapse .horizontal-only {
+        display:none;
+    }
+
+    .locname {
+        flex: 1 1 1 100%;
+    }
+ 
+    /*
+    Label the data
+    */
+    .collapse td:before {
+        content: attr(data-title);
+        color:#787880;
+    }
+}
+
+
+
