@@ -201,7 +201,7 @@ tr:first-child {
 .platform   { min-width: 3ch;  }
 .time       { min-width: 5ch;  }
 .routepart  { min-width: 3ch;  }
-.activities { min-width: 4ch;  }
+.activities { min-width: 2ch;  }
 .distance   { min-width: 1ch;  }
 .activity {
     padding-right: 1px;
