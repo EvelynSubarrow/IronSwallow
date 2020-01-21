@@ -1,5 +1,7 @@
 body {
     background-color: #04000b;
+    background-image: url(/swallow);
+    background-repeat:no-repeat;
     color: #ddf;
     font-family: monospace;
     margin:0;

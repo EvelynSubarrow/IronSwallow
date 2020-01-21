@@ -4,13 +4,13 @@
   <style>
     .swallow {
         fill-opacity: 1;
-        fill: white;
+        fill: #303030;
         stroke-width:1px;
-        stroke: white;
+        stroke: #303030;
     }
   </style>
 </defs>
-<rect x="0" y="0" width="100%" height="100%" fill="#000000" fill-opacity="0.995" />
+<!--<rect x="0" y="0" width="100%" height="100%" fill="#000000" fill-opacity="0.995" />-->
 <!--<image xlink:href="intercity-template.png" />-->
 <path class="swallow" d="M 1491,65 H 1504 L 1509,79 H 1487 Z" />
 <path class="swallow" d="M 1465,138 H 1524 L 1528,153 H 1458 Z" />
