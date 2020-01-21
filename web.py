@@ -185,6 +185,18 @@ def html_service(id, date):
         mimetype="text/html"
         )
 
+@app.route("/redirect/schedule")
+def redirect_schedule():
+    uid = request.args.get("uid", '')
+    date = request.args.get("date", '')
+    return flask.redirect(flask.url_for("html_service", path=uid, date=date))
+
+@app.route("/redirect/location")
+def redirect_location():
+    code = request.args.get("code", '')
+    time = request.args.get("time", '')
+    return flask.redirect(flask.url_for("html_location", location=code, time=time))
+
 def get_cursor():
     global _web_db
 
