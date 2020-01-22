@@ -42,26 +42,25 @@
             </section>
             <section>
                 <h1>Services</h1>
-            <table>
+            <table class="collapse">
                 <tr class="headrow horizontal-only">
-                    <th colspan="2" class="headgroup"></th>
+                    <th colspan="3" class="headgroup"></th>
                     <th colspan="3" class="headgroup">WTT</th>
                     <th colspan="3" class="headgroup">Darwin</th>
-                    <th colspan="7" class="headgroup"></th>
+                    <th colspan="6" class="headgroup"></th>
                 </tr>
                 <tr class="headrow row-overflow">
                     <th class="borderleft">TIPLOC</th>
                     <th class="borderleft borderright">Pl</th>
+                    <th class="borderleft borderright">Activity</th>
 
                     <th class="borderleft">Arr.</th>
                     <th>Pass</th>
                     <th class="borderright">Dep.</th>
 
-                    <th class="borderleft horizontal-only">Arr.</th>
-                    <th class="horizontal-only">Pass</th>
-                    <th class="borderright horizontal-only">Dep.</th>
-
-                    <th class="borderleft borderright">Activity</th>
+                    <th class="borderleft">Arr.</th>
+                    <th class="">Pass</th>
+                    <th class="borderright">Dep.</th>
 
                     <th>UID</th>
                     <th>Head</th>
@@ -74,34 +73,26 @@
                 </tr>
             {% for schedule in board["services"] -%}
                 <tr class="primaryrow {{ "pass" if schedule["here"]["times"]["pass"] else ""}} {{ "as-required" if "Q" in "" else "" }}{{" cancelled"*schedule["here"]["cancelled"] }}">
-                    <td class="tiploc borderleft">{{ schedule["here"]["tiploc"] }}</td>
-                    <td class="platform borderleft borderright"> {{ (schedule["here"]["platform"].get("suppressed",False)*"*" or ' ') + (schedule["here"]["platform"].get("platform") or "") + (schedule["here"]["platform"].get("confirmed",False)*"." or "")}}</td>
-                    <td class="time borderleft">
-                        {{format_time(schedule["here"], "aw")}}
-                        <p class="vertical-only">{{ format_time(schedule["here"], "a.") }}</p>
-                    </td>
-                    <td class="time">
-                        {{ format_time(schedule["here"], "pw")}}
-                        <p class="vertical-only">{{ format_time(schedule["here"], "p.") }}</p>
-                    </td>
-                    <td class="time borderright">
-                        {{ format_time(schedule["here"], "dw") }}
-                        <p class="vertical-only">{{ format_time(schedule["here"], "d.") }}</p>
-                    </td>
-                    <td class="time borderleft horizontal-only">{{  format_time(schedule["here"], "a.") }}</td>
-                    <td class="time horizontal-only">{{             format_time(schedule["here"], "p.") }}</td>
-                    <td class="time borderright horizontal-only">{{ format_time(schedule["here"], "d.") }}</td>
-                    <td class="activities borderleft borderright">{{ schedule["here"]["activity"] }}</td>
-                    <td class="uid borderleft"><a href="/s/{{schedule["rid"]}}">{{ schedule["uid"] }}</a></td>
-                    <td>{{ schedule["signalling_id"] or '' }}</td>
-                    <td>{{ schedule["category"] }}</td>
-                    <td>{{ schedule["operator"] }}</td>
-                    <td class="origin borderleft">
+                    <td data-title="tip" class="tiploc borderleft">{{ schedule["here"]["tiploc"] }}</td>
+                    <td data-title="pt." class="platform borderleft borderright"> {{ (schedule["here"]["platform"].get("suppressed",False)*"*" or ' ') + (schedule["here"]["platform"].get("platform") or "") + (schedule["here"]["platform"].get("confirmed",False)*"." or "")}}</td>
+                    <td data-title="act" class="activities borderleft borderright">{{ schedule["here"]["activity"] }}</td>
+
+                    <td data-title="arr." class="time borderleft">{{format_time(schedule["here"], "aw")}}</td>
+                    <td data-title="pass" class="time">{{ format_time(schedule["here"], "pw")}}</td>
+                    <td data-title="dep." class="time borderright">{{ format_time(schedule["here"], "dw") }}</td>
+                    <td data-title="arr." class="time borderleft">{{  format_time(schedule["here"], "a.") }}</td>
+                    <td data-title="pass" class="time">{{             format_time(schedule["here"], "p.") }}</td>
+                    <td data-title="dep." class="time borderright">{{ format_time(schedule["here"], "d.") }}</td>
+                    <td data-title="uid"  class="uid borderleft"><a href="/s/{{schedule["rid"]}}">{{ schedule["uid"] }}</a></td>
+                    <td data-title="head">{{ schedule["signalling_id"] or '' }}</td>
+                    <td data-title="cat.">{{ schedule["category"] }}</td>
+                    <td data-title="op.">{{ schedule["operator"] }}</td>
+                    <td data-title="origins" class="origin borderleft">
                         {% for origin in schedule["origins"] %}
                             <span class="{{"cancelled" if origin["cancelled"] else ''}}">{{origin["name_full"]}}</span><br>
                         {% endfor %}
                     </td>
-                    <td class="destination borderright">
+                    <td data-title="destinations" class="destination borderright">
                         {% for destination in schedule["destinations"] %}
                             <span class="{{"cancelled" if destination["cancelled"] else ''}}"><a href="/d/{{destination["tiploc"]}}">{{destination["name_full"]}}</a></span><br>
                         {% endfor %}
