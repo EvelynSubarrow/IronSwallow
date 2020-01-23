@@ -10,8 +10,7 @@ import psycopg2
 import psycopg2.extras
 import stomp
 
-from util import database
-from util import pushport
+from util import database, parse, query
 
 def compare_time(t1, t2):
     if not (t1 and t2):
@@ -53,7 +52,7 @@ def incorporate_reference_data(c):
     obj_list = [a for a in obj_list if "ref" in a["Key"]]
     stream = client.get_object(Bucket="darwin.xmltimetable", Key=obj_list[-1]["Key"])["Body"]
 
-    parsed = pushport.PushPortParser().parse(io.StringIO(gzip.decompress(stream.read()).decode("utf8")))
+    parsed = parse.PushPortParser().parse(io.StringIO(gzip.decompress(stream.read()).decode("utf8")))
 
     for reference in parsed["PportTimetableRef"]["list"]:
         if reference["tag"]=="LocationRef":
@@ -232,7 +231,7 @@ def connect_and_subscribe(mq):
 
 def parse(message):
     if message:
-        return pushport.PushPortParser().parse(io.StringIO(message.decode("utf8")))["Pport"].get("uR", {})
+        return parse.PushPortParser().parse(io.StringIO(message.decode("utf8")))["Pport"].get("uR", {})
 
 def store(cursor, parsed):
     if not parsed:
@@ -414,12 +413,10 @@ if __name__ == "__main__":
         keepalive=True, auto_decode=False, heartbeats=(10000, 10000))
 
     with database.DatabaseConnection() as db_connection, db_connection.new_cursor() as cursor:
-        cursor.execute("SELECT * FROM last_received_sequence;")
-        row = cursor.fetchone()
-
         incorporate_reference_data(cursor)
 
-        if not row or (datetime.datetime.utcnow()-row[2]).seconds > 300:
+        last_retrieved = query.last_retrieved(cursor)
+        if not last_retrieved or (datetime.datetime.utcnow()-last_retrieved).seconds > 300:
             log.info("Last retrieval too old, using FTP snapshots")
             incorporate_ftp(cursor)
 
