@@ -185,6 +185,8 @@ def incorporate_ftp(c):
             c.execute("DELETE FROM darwin_schedules;")
             c.execute("DELETE FROM darwin_schedule_locations;")
             c.execute("DELETE FROM darwin_schedule_status;")
+            c.execute("DELETE FROM darwin_associations;")
+            c.execute("DELETE FROM darwin_messages;")
 
             pool = multiprocessing.Pool()
             while actual_files:
@@ -202,7 +204,6 @@ def incorporate_ftp(c):
             log.error("FTP failed to connect, waiting {}s".format(backoff))
             sleep(backoff)
     log.error("FTP connection attempts exhausted")
-
 
 def connect_and_subscribe(mq):
     for n in range(1,31):
