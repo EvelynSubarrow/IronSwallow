@@ -10,7 +10,8 @@ import psycopg2
 import psycopg2.extras
 import stomp
 
-from util import database, parse, query
+from util import database, query
+from darwin import parse
 
 def compare_time(t1, t2):
     if not (t1 and t2):
