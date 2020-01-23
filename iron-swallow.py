@@ -52,7 +52,7 @@ def incorporate_reference_data(c):
     obj_list = [a for a in obj_list if "ref" in a["Key"]]
     stream = client.get_object(Bucket="darwin.xmltimetable", Key=obj_list[-1]["Key"])["Body"]
 
-    parsed = parse.PushPortParser().parse(io.StringIO(gzip.decompress(stream.read()).decode("utf8")))
+    parsed = parse.parse_xml(gzip.decompress(stream.read()))
 
     for reference in parsed["PportTimetableRef"]["list"]:
         if reference["tag"]=="LocationRef":
@@ -193,7 +193,7 @@ def incorporate_ftp(c):
                 file, contents = actual_files[0]
                 log.info("Enqueueing retrieved file {}".format(file))
                 lines = gzip.decompress(contents).split(b"\n")
-                for result in pool.imap(parse, lines):
+                for result in pool.imap(parse.parse_darwin, lines):
                     store(c,result)
                 del lines
                 del actual_files[0]
@@ -229,10 +229,6 @@ def connect_and_subscribe(mq):
             log.error("Failed to connect, waiting {}s".format(backoff))
             sleep(backoff)
     log.error("Connection attempts exhausted")
-
-def parse(message):
-    if message:
-        return parse.PushPortParser().parse(io.StringIO(message.decode("utf8")))["Pport"].get("uR", {})
 
 def store(cursor, parsed):
     if not parsed:
@@ -371,7 +367,7 @@ class Listener(stomp.ConnectionListener):
 
         message = zlib.decompress(message, zlib.MAX_WBITS | 32)
 
-        store(self.cursor, parse(message))
+        store(self.cursor, parse.parse_darwin(message))
         self._mq.ack(id=headers['message-id'], subscription=headers['subscription'])
 
         c.execute("""INSERT INTO last_received_sequence VALUES (0, %s, %s)
