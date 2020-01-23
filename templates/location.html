@@ -1,28 +1,28 @@
 {% extends "layout.html" %}
 {% block title %}{{location}} services on {{time.isoformat()}}{% endblock %}
 {% block content %}
-        {% if message %}
+        {%- if message -%}
             <section class="message">{{message}}</section>
-        {% endif %}
-        {% if notes %}
+        {%- endif -%}
+        {%- if notes -%}
             <section>
                 <h1>Query messages</h1>
-            {% for note in notes %}
+            {%- for note in notes -%}
                 <div class="note">{{ note }}</div>
-            {% endfor %}
+            {%- endfor -%}
             </section>
         {% endif %}
-        {% if board["messages"] %}
+        {%- if board["messages"] -%}
             <section>
                 <h1>Darwin messages</h1>
-                {% for message in board["messages"] %}
+                {%- for message in board["messages"] -%}
                 <p class="note">
                 <span class="notehead"><span class="normal">{{message["category"].ljust(11)}}</span> category message, severity <span class="normal">{{message["severity"]}}</span></span>
                 {{ message["message"] |safe}}
                 </p>
-                {% endfor %}
+                {%- endfor -%}
             </section>
-        {% endif %}
+        {%- endif -%}
             <section>
                 <h1>Locations</h1>
                 <table>
@@ -71,7 +71,7 @@
                     <th class="borderleft">Origin</th>
                     <th class="borderright">Destination</th>
                 </tr>
-            {% for schedule in board["services"] -%}
+            {%- for schedule in board["services"] -%}
                 <tr class="primaryrow {{ "pass" if schedule["here"]["times"]["pass"] else ""}} {{ "as-required" if "Q" in "" else "" }}{{" cancelled"*schedule["here"]["cancelled"] }}">
                     <td data-title="tip" class="tiploc borderleft">{{ schedule["here"]["tiploc"] }}</td>
                     <td data-title="pt." class="platform borderleft borderright"> {{ (schedule["here"]["platform"].get("suppressed",False)*"*" or ' ') + (schedule["here"]["platform"].get("platform") or "") + (schedule["here"]["platform"].get("confirmed",False)*"." or "")}}</td>
@@ -88,17 +88,17 @@
                     <td data-title="cat.">{{ schedule["category"] }}</td>
                     <td data-title="op.">{{ schedule["operator"] }}</td>
                     <td data-title="origins" class="origin borderleft">
-                        {% for origin in schedule["origins"] %}
+                        {%- for origin in schedule["origins"] -%}
                             <span class="{{"cancelled" if origin["cancelled"] else ''}}">{{origin["name_full"]}}</span><br>
-                        {% endfor %}
+                        {%- endfor -%}
                     </td>
                     <td data-title="destinations" class="destination borderright">
-                        {% for destination in schedule["destinations"] %}
+                        {%- for destination in schedule["destinations"] -%}
                             <span class="{{"cancelled" if destination["cancelled"] else ''}}"><a href="/d/{{destination["tiploc"]}}">{{destination["name_full"]}}</a></span><br>
-                        {% endfor %}
+                        {%- endfor -%}
                     </td>
                 </tr>
-            {% endfor %}
+            {%- endfor -%}
             </table>
             </section>
 {% endblock %}
