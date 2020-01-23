@@ -13,6 +13,8 @@ import stomp
 from util import database, query
 from darwin import parse
 
+LOCATIONS = {}
+
 def compare_time(t1, t2):
     if not (t1 and t2):
         return 0
@@ -37,8 +39,6 @@ def form_original_wt(times):
         else:
             out += "      "
     return out
-
-LOCATIONS = {}
 
 def incorporate_reference_data(c):
     strip = lambda x: x.rstrip() or None if x else None
