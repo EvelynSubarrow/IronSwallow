@@ -4,7 +4,7 @@ from decimal import Decimal
 
 from util import database
 
-def json_default(value):
+def json_default(value) -> str:
     if isinstance(value, datetime.datetime):
         return value.isoformat()
     elif isinstance(value, datetime.date):
@@ -14,13 +14,13 @@ def json_default(value):
     else:
         raise ValueError(type(value))
 
-def compare_time(t1, t2):
+def compare_time(t1, t2) -> int:
     if not (t1 and t2):
         return 0
     t1,t2 = [a.hour*3600+a.minute*60+a.second for a in (t1,t2)]
     return (Decimal(t1)-Decimal(t2))/3600
 
-def combine_darwin_time(working_time, darwin_time):
+def combine_darwin_time(working_time, darwin_time) -> datetime.datetime:
     if not working_time:
         return None
 
@@ -36,7 +36,7 @@ def combine_darwin_time(working_time, darwin_time):
 
     return datetime.datetime.combine(working_time.date(), darwin_time) + datetime.timedelta(days=ssd_offset)
 
-def form_location_select(names):
+def form_location_select(names) -> str:
     stat_select = ""
     for location_name, stat_name, loc_dict_name in names:
         stat_select += "{ln}.type, {ld}.dict, {ln}.activity, {ln}.cancelled, {ln}.wta, {ln}.pta, {ln}.wtp, NULL, {ln}.wtd, {ln}.ptd,\n".format(ln=location_name, ld=loc_dict_name)
@@ -46,7 +46,7 @@ def form_location_select(names):
                 sn=stat_name, tn=time_name, comma=","*(not(stat_name==names[-1][1] and time_name=="td")))
     return stat_select
 
-def process_location_outline(location):
+def process_location_outline(location) -> dict:
     if location:
         del location["name_darwin"]
         del location["name_corpus"]
@@ -54,7 +54,7 @@ def process_location_outline(location):
         del location["operator"]
     return location
 
-def location_dict(row, preserve_null_times=False, preserve_null_platform=False):
+def location_dict(row, preserve_null_times=False, preserve_null_platform=False) -> dict:
     out_row = OrderedDict([(a,row.pop()) for a in ("type","location","activity","cancelled")])
 
     loc_outline = process_location_outline(out_row["location"])
@@ -94,7 +94,7 @@ def location_dict(row, preserve_null_times=False, preserve_null_platform=False):
 
     return out_row
 
-def station_board(cursor, locations, base_dt=None, period=480, limit=15, intermediate_tiploc=None, passenger_only=True):
+def station_board(cursor, locations, base_dt=None, period=480, limit=15, intermediate_tiploc=None, passenger_only=True) -> dict:
     locations = tuple([a.upper() for a in locations])
     out = OrderedDict()
 
@@ -166,7 +166,7 @@ def station_board(cursor, locations, base_dt=None, period=480, limit=15, interme
 
     return out
 
-def service(cursor, sid, date=None):
+def service(cursor, sid, date=None) -> dict:
     cursor.execute("""SELECT sch.uid,sch.rid,sch.rsid,sch.ssd,sch.signalling_id,sch.status,sch.category,sch.operator,
         sch.is_active,sch.is_charter,sch.is_passenger FROM darwin_schedules as sch WHERE rid=%s OR (uid=%s AND ssd=%s);""", (sid, sid, date))
 
@@ -233,7 +233,7 @@ def service(cursor, sid, date=None):
 
         return schedule
 
-def last_retrieved(cursor):
+def last_retrieved(cursor) -> datetime.datetime:
     cursor.execute("SELECT time_acquired FROM last_received_sequence;")
     row = cursor.fetchone()
     if row:

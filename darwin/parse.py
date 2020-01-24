@@ -1,11 +1,11 @@
 import io, xml.sax
 from collections import OrderedDict
 
-def parse_darwin(message):
+def parse_darwin(message) -> dict:
     if message:
         return PushPortParser().parse(io.StringIO(message.decode("utf8")))["Pport"].get("uR", {})
 
-def parse_xml(message):
+def parse_xml(message) -> dict:
     return PushPortParser().parse(io.StringIO(message.decode("utf8")))
 
 class PushPortParser(xml.sax.ContentHandler):

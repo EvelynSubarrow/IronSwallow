@@ -4,6 +4,7 @@ import logging, json, datetime, io, zlib, gzip, multiprocessing, ftplib
 from time import sleep
 from decimal import Decimal
 from collections import OrderedDict
+from typing import List
 
 import boto3
 import psycopg2
@@ -15,23 +16,23 @@ from darwin import parse
 
 LOCATIONS = {}
 
-def compare_time(t1, t2):
+def compare_time(t1, t2) -> int:
     if not (t1 and t2):
         return 0
     t1,t2 = [a.hour*3600+a.minute*60+a.second for a in (t1,t2)]
     return (Decimal(t1)-Decimal(t2))/3600
 
-def process_time(time):
+def process_time(time) -> datetime.time:
     if not time:
         return None
     if len(time)==5:
         time += ":00"
     return datetime.datetime.strptime(time, "%H:%M:%S").time()
 
-def full_original_wt(location):
+def full_original_wt(location) -> None:
     return form_original_wt([process_time(location.get(a)) for a in ("wta", "wtp", "wtd")])
 
-def form_original_wt(times):
+def form_original_wt(times) -> str:
     out = ""
     for time in times:
         if time:
@@ -40,10 +41,10 @@ def form_original_wt(times):
             out += "      "
     return out
 
-def incorporate_reference_data(c):
+def incorporate_reference_data(c) -> None:
     store_reference_data(c, retrieve_reference_data(c))
 
-def retrieve_reference_data(c):
+def retrieve_reference_data(c) -> List[dict]:
     client = boto3.client('s3', aws_access_key_id=SECRET["s3-access"], aws_secret_access_key=SECRET["s3-secret"])
     obj_list = client.list_objects(Bucket="darwin.xmltimetable")["Contents"]
     obj_list = [a for a in obj_list if "ref" in a["Key"]]
@@ -52,7 +53,7 @@ def retrieve_reference_data(c):
 
     return parsed
 
-def store_reference_data(c, parsed):
+def store_reference_data(c, parsed) -> None:
     strip = lambda x: x.rstrip() or None if x else None
     case = lambda x: x.title() if x else x
 
@@ -90,7 +91,7 @@ def store_reference_data(c, parsed):
 
     c.execute("COMMIT;")
 
-def renew_schedule_association_meta(c, main_rid=None, assoc_rid=None):
+def renew_schedule_association_meta(c, main_rid=None, assoc_rid=None) -> None:
     if main_rid and assoc_rid:
         c.execute("""SELECT a.category,tiploc,s1.rid,s1.origins,s1.destinations,s2.rid,s2.origins,s2.destinations
             FROM darwin_associations AS a
@@ -125,7 +126,7 @@ def renew_schedule_association_meta(c, main_rid=None, assoc_rid=None):
         if not any([a.get("association_tiploc")==row["tiploc"] and a["category"]==row["category"] for a in row["assoc_origins"]]):
             c.execute("""UPDATE darwin_schedules SET (origins)=(darwin_schedules.origins || %s::json[]) WHERE rid=%s;""", (row["main_origins"],row["assoc_rid"]))
 
-def renew_schedule_meta(c):
+def renew_schedule_meta(c) -> None:
     log.info("Computing origin/destination lists for schedules")
 
     crid = None
@@ -164,7 +165,7 @@ def renew_schedule_meta(c):
     renew_schedule_association_meta(c)
     log.info("All origin and destination lists have been completed")
 
-def incorporate_ftp(c):
+def incorporate_ftp(c) -> None:
     ftp = ftplib.FTP(SECRET["ftp-hostname"])
     for n in range(1,31):
         try:
@@ -236,7 +237,7 @@ def connect_and_subscribe(mq):
             sleep(backoff)
     log.error("Connection attempts exhausted")
 
-def store_message(cursor, parsed):
+def store_message(cursor, parsed) -> None:
     if not parsed:
         return
     c = cursor
