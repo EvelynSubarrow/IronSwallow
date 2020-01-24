@@ -41,19 +41,24 @@ def form_original_wt(times):
     return out
 
 def incorporate_reference_data(c):
+    store_reference_data(c, retrieve_reference_data(c))
+
+def retrieve_reference_data(c):
+    client = boto3.client('s3', aws_access_key_id=SECRET["s3-access"], aws_secret_access_key=SECRET["s3-secret"])
+    obj_list = client.list_objects(Bucket="darwin.xmltimetable")["Contents"]
+    obj_list = [a for a in obj_list if "ref" in a["Key"]]
+    stream = client.get_object(Bucket="darwin.xmltimetable", Key=obj_list[-1]["Key"])["Body"]
+    parsed = parse.parse_xml(gzip.decompress(stream.read()))
+
+    return parsed
+
+def store_reference_data(c, parsed):
     strip = lambda x: x.rstrip() or None if x else None
     case = lambda x: x.title() if x else x
 
     with open("datasets/corpus.json", encoding="iso-8859-1") as f:
         corpus = json.load(f)["TIPLOCDATA"]
     corpus = {a["TIPLOC"]: a for a in corpus}
-
-    client = boto3.client('s3', aws_access_key_id=SECRET["s3-access"], aws_secret_access_key=SECRET["s3-secret"])
-    obj_list = client.list_objects(Bucket="darwin.xmltimetable")["Contents"]
-    obj_list = [a for a in obj_list if "ref" in a["Key"]]
-    stream = client.get_object(Bucket="darwin.xmltimetable", Key=obj_list[-1]["Key"])["Body"]
-
-    parsed = parse.parse_xml(gzip.decompress(stream.read()))
 
     for reference in parsed["PportTimetableRef"]["list"]:
         if reference["tag"]=="LocationRef":
