@@ -12,7 +12,7 @@ class DatabaseConnection:
         self.connection = None
         self.executed = []
 
-    def __enter__(self) -> DatabaseConnection:
+    def __enter__(self):
         self.connect()
         return self
 
@@ -20,11 +20,11 @@ class DatabaseConnection:
         self.connection.close()
         return False
 
-    def connect(self) -> psycopg2.connection:
+    def connect(self):
         self.connection = psycopg2.connect(config.get("database-string"))
         return self.connection
 
-    def new_cursor(self) -> psycopg2.cursor:
+    def new_cursor(self):
         return self.connection.cursor()
 
     def execute_once(self, query) -> None:
