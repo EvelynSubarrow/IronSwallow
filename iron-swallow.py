@@ -149,6 +149,7 @@ def renew_schedule_meta(c) -> None:
 
         loc_dict = OrderedDict([("source", "SC"), ("type", row["type"]), ("activity", row["activity"]), ("cancelled", row["canc"])])
         loc_dict.update(LOCATIONS[row["tiploc"]])
+        loc_dict = query.process_location_outline(loc_dict)
 
         if row["type"][-2:]=="OR":
             origins.append(json.dumps(loc_dict))
