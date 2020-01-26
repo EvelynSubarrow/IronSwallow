@@ -277,7 +277,7 @@ a:hover, a:active {
     }
  
     .collapse tr {
-        border: 1px solid #ccc;
+        border-top: 1px solid #334;
         display: grid;
         grid-template-columns: repeat(3,1fr);
     }
