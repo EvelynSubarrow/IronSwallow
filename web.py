@@ -189,7 +189,7 @@ def html_service(id, date):
 def redirect_schedule():
     uid = request.args.get("uid", '')
     date = request.args.get("date", '')
-    return flask.redirect(flask.url_for("html_service", path=uid, date=date))
+    return flask.redirect(flask.url_for("html_service", id=uid, date=date))
 
 @app.route("/redirect/location")
 def redirect_location():
