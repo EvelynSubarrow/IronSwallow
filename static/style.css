@@ -242,6 +242,7 @@ a:hover, a:active {
 /* Responsiveness */
 
 .vertical-only { display:none; }
+.flex-break { display:none; }
 
 @media (max-aspect-ratio: 1/1)
 {
@@ -278,17 +279,29 @@ a:hover, a:active {
  
     .collapse tr {
         border-top: 1px solid #334;
-        display: grid;
-        grid-template-columns: repeat(3,1fr);
+        display: flex;
+        flex-wrap:wrap;
     }
- 
+
     .collapse td {
         /* Behave  like a "row" */
         border: none;
         position: relative;
-        //padding-left: 50%; 
         white-space: normal;
         text-align:left;
+    }
+
+    .collapse .time {
+        flex-basis:30%;
+        min-width:7ch;
+    }
+    .collapse .origin {
+        flex-basis:100%;
+        width:100%;
+    }
+    .collapse .destination {
+        flex-basis:100%;
+        width:100%
     }
  
     /* Make sure horizontal only is truly dead */
@@ -296,10 +309,6 @@ a:hover, a:active {
         display:none;
     }
 
-    .locname {
-        flex: 1 1 1 100%;
-    }
- 
     /*
     Label the data
     */
@@ -307,6 +316,13 @@ a:hover, a:active {
         content: attr(data-title);
         color:#787880;
     }
+
+    .flex-break {
+        display:block;
+        height:0;
+        flex-basis:100%;
+    }
+
 }
 
 

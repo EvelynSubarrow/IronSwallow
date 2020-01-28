@@ -77,22 +77,26 @@
                     <td data-title="pt." class="platform borderleft borderright"> {{ (schedule["here"]["platform"].get("suppressed",False)*"*" or ' ') + (schedule["here"]["platform"].get("platform") or "") + (schedule["here"]["platform"].get("confirmed",False)*"." or "")}}</td>
                     <td data-title="act" class="activities borderleft borderright">{{ schedule["here"]["activity"] }}</td>
 
-                    <td data-title="arr." class="time borderleft">{{format_time(schedule["here"], "aw")}}</td>
-                    <td data-title="pass" class="time">{{ format_time(schedule["here"], "pw")}}</td>
-                    <td data-title="dep." class="time borderright">{{ format_time(schedule["here"], "dw") }}</td>
-                    <td data-title="arr." class="time borderleft">{{  format_time(schedule["here"], "a.") }}</td>
-                    <td data-title="pass" class="time">{{             format_time(schedule["here"], "p.") }}</td>
-                    <td data-title="dep." class="time borderright">{{ format_time(schedule["here"], "d.") }}</td>
+                    <td class="flex-break"></td>
+                    <td data-title="a" class="time borderleft">{{format_time(schedule["here"], "aw")}}</td>
+                    <td data-title="p" class="time">{{ format_time(schedule["here"], "pw")}}</td>
+                    <td data-title="d" class="time borderright">{{ format_time(schedule["here"], "dw") }}</td>
+                    <td class="flex-break"></td>
+                    <td data-title="a" class="time borderleft">{{  format_time(schedule["here"], "a.") }}</td>
+                    <td data-title="p" class="time">{{             format_time(schedule["here"], "p.") }}</td>
+                    <td data-title="d" class="time borderright">{{ format_time(schedule["here"], "d.") }}</td>
+                    <td class="flex-break"></td>
+
                     <td data-title="uid"  class="uid borderleft"><a href="/s/{{schedule["rid"]}}">{{ schedule["uid"] }}</a></td>
                     <td data-title="head">{{ schedule["signalling_id"] or '' }}</td>
                     <td data-title="cat.">{{ schedule["category"] }}</td>
                     <td data-title="op.">{{ schedule["operator"] }}</td>
-                    <td data-title="origins" class="origin borderleft">
+                    <td class="origin borderleft">
                         {%- for origin in schedule["origins"] -%}
                             <span class="{{"cancelled" if origin["cancelled"] else ''}}">{{origin["name_full"]}}</span><br>
                         {%- endfor -%}
                     </td>
-                    <td data-title="destinations" class="destination borderright">
+                    <td class="destination borderright">
                         {%- for destination in schedule["destinations"] -%}
                             <span class="{{"cancelled" if destination["cancelled"] else ''}}"><a href="/d/{{destination["tiploc"]}}">{{destination["name_full"]}}</a></span><br>
                         {%- endfor -%}
