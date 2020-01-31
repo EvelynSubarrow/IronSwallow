@@ -89,6 +89,19 @@ def store_reference_data(c, parsed) -> None:
 
             LOCATIONS[reference["tpl"]] = loc
 
+        if reference["tag"]=="TocRef":
+            c.execute("""INSERT INTO darwin_operators VALUES (%s, %s, %s) ON CONFLICT (operator)
+                DO UPDATE SET (operator_name, url)=(EXCLUDED.operator_name, EXCLUDED.url);""",
+                (reference["toc"], reference["tocname"], reference.get("url")))
+
+        if reference["tag"] in ["CancellationReasons", "LateRunningReasons"]:
+            reason_type = "C"*(reference["tag"]=="CancellationReasons") or "D"
+            for reason in reference["list"]:
+                if reason["tag"]=="Reason":
+                    c.execute("""INSERT INTO darwin_reasons VALUES (%s, %s, %s) ON CONFLICT (id, type) DO UPDATE
+                        SET (type, message)=(EXCLUDED.type, EXCLUDED.message);""",
+                        (reason["code"], reason_type, reason["reasontext"]))
+
     c.execute("COMMIT;")
 
 def renew_schedule_association_meta(c, main_rid=None, assoc_rid=None) -> None:

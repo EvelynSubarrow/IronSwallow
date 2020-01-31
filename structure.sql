@@ -154,3 +154,21 @@ CREATE INDEX idx_d_assoc_main_rid on darwin_associations(main_rid);
 CREATE INDEX idx_d_assoc_main_original_wt on darwin_associations(main_original_wt);
 CREATE INDEX idx_d_assoc_assoc_rid on darwin_associations(assoc_rid);
 CREATE INDEX idx_d_assoc_assoc_original_wt on darwin_associations(assoc_original_wt);
+
+CREATE TABLE darwin_reasons (
+    id                   SMALLINT     NOT NULL,
+    type                 CHAR(1)      NOT NULL,
+    message              VARCHAR      NOT NULL,
+    UNIQUE(id, type)
+);
+
+CREATE INDEX idx_d_reason_id ON darwin_reasons(id);
+
+CREATE TABLE darwin_operators (
+    operator             CHAR(2)      NOT NULL,
+    operator_name        VARCHAR      NOT NULL,
+    url                  VARCHAR      DEFAULT NULL,
+    UNIQUE(operator)
+);
+
+CREATE INDEX idx_d_operator ON darwin_operators(operator);
