@@ -15,6 +15,9 @@ CREATE TABLE darwin_schedules(
     origins               JSON ARRAY NOT NULL,
     destinations          JSON ARRAY NOT NULL,
 
+    delay_reason          JSON       DEFAULT NULL,
+    cancel_reason         JSON       DEFAULT NULL,
+
     UNIQUE (uid, ssd),
     UNIQUE (rid),
     PRIMARY KEY (rid)

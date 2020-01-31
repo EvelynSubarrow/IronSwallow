@@ -15,6 +15,7 @@ from util import database, query
 from darwin import parse
 
 LOCATIONS = {}
+REASONS = {}
 
 def compare_time(t1, t2) -> int:
     if not (t1 and t2):
@@ -101,6 +102,7 @@ def store_reference_data(c, parsed) -> None:
                     c.execute("""INSERT INTO darwin_reasons VALUES (%s, %s, %s) ON CONFLICT (id, type) DO UPDATE
                         SET (type, message)=(EXCLUDED.type, EXCLUDED.message);""",
                         (reason["code"], reason_type, reason["reasontext"]))
+                    REASONS[(reason["code"], reason_type)] = reason["reasontext"]
 
     c.execute("COMMIT;")
 
@@ -346,6 +348,16 @@ def store_message(cursor, parsed) -> None:
                         record["rid"], location["tpl"], original_wt, *times, *times_source, *times_type, *times_delay,
                         plat.get("$"), bool(plat.get("platsup")), bool(plat.get("cisPlatsup")), bool(plat.get("conf")), plat.get("platsrc"),
                         record.get("length")))
+
+                if location["tag"]=="LateReason":
+                    reason_dict = OrderedDict([
+                        ("code", location["$"]),
+                        ("message", REASONS[(location["$"], "D")]),
+                        ("location", query.process_location_outline(LOCATIONS.get(location.get("tiploc")))),
+                        ("near", bool(location.get("near"))),
+                        ])
+
+                    c.execute("UPDATE darwin_schedules SET delay_reason=%s WHERE rid=%s;", (json.dumps(reason_dict), record["rid"]))
 
         if record["tag"]=="deactivated":
             c.execute("UPDATE darwin_schedules SET is_active=FALSE WHERE rid=%s;", (record["rid"],))
