@@ -3,13 +3,13 @@ from collections import OrderedDict
 
 def parse_darwin(message) -> dict:
     if message:
-        return PushPortParser().parse(io.StringIO(message.decode("utf8")))["Pport"].get("uR", {})
+        return DarwinParser().parse(io.StringIO(message.decode("utf8")))["Pport"].get("uR", {})
 
 def parse_xml(message) -> dict:
-    return PushPortParser().parse(io.StringIO(message.decode("utf8")))
+    return DarwinParser().parse(io.StringIO(message.decode("utf8")))
 
-class PushPortParser(xml.sax.ContentHandler):
-    def __init__(self, list_paths=["Pport.uR", "Pport.uR.schedule", "Pport.uR.TS", "PportTimetableRef", "Pport.uR.OW"], detokenise="Pport.uR.OW.Msg", strip_whitespace=True):
+class DarwinParser(xml.sax.ContentHandler):
+    def __init__(self, list_paths=["Pport.uR", "Pport.uR.schedule", "Pport.uR.TS", "Pport.uR.OW", "PportTimetableRef", "PportTimetableRef.LateRunningReasons", "PportTimetableRef.CancellationReasons"], detokenise="Pport.uR.OW.Msg", strip_whitespace=True):
         self._path = []
         self._root = OrderedDict()
         self._dicts = [self._root]
