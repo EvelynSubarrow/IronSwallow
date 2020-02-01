@@ -48,6 +48,7 @@ def form_location_select(names) -> str:
 
 def process_location_outline(location) -> dict:
     if location:
+        location = location.copy()
         del location["name_darwin"]
         del location["name_corpus"]
         del location["crs_corpus"]
