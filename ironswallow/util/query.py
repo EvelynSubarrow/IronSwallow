@@ -121,6 +121,7 @@ def station_board(cursor, locations, base_dt=None, period=480, limit=15, interme
     cursor.execute("""SELECT
         sch.uid,sch.rid,sch.rsid,sch.ssd,sch.signalling_id,sch.status,sch.category,sch.operator,
         sch.is_active,sch.is_charter,sch.is_passenger,sch.origins,sch.destinations,
+        sch.delay_reason,sch.cancel_reason,
 
         {}
 
@@ -157,7 +158,7 @@ def station_board(cursor, locations, base_dt=None, period=480, limit=15, interme
         # Reverse so popping will retrieve from the front
         row = list(row)[::-1]
         out_row = OrderedDict()
-        for key in ["uid", "rid", "rsid", "ssd", "signalling_id", "status", "category", "operator", "is_active", "is_charter", "is_passenger", "origins", "destinations"]:
+        for key in ["uid", "rid", "rsid", "ssd", "signalling_id", "status", "category", "operator", "is_active", "is_charter", "is_passenger", "origins", "destinations", "delay_reason", "cancel_reason"]:
             out_row[key] = row.pop()
 
         for location_name in ("here", "origin", "intermediate", "destination"):
@@ -169,7 +170,8 @@ def station_board(cursor, locations, base_dt=None, period=480, limit=15, interme
 
 def service(cursor, sid, date=None) -> dict:
     cursor.execute("""SELECT sch.uid,sch.rid,sch.rsid,sch.ssd,sch.signalling_id,sch.status,sch.category,sch.operator,
-        sch.is_active,sch.is_charter,sch.is_passenger FROM darwin_schedules as sch WHERE rid=%s OR (uid=%s AND ssd=%s);""", (sid, sid, date))
+        sch.is_active,sch.is_charter,sch.is_passenger,sch.delay_reason,sch.cancel_reason
+        FROM darwin_schedules as sch WHERE rid=%s OR (uid=%s AND ssd=%s);""", (sid, sid, date))
 
     row = cursor.fetchone()
 
@@ -179,7 +181,7 @@ def service(cursor, sid, date=None) -> dict:
         row = list(row)[::-1]
 
         schedule = OrderedDict()
-        for key in ["uid", "rid", "rsid", "ssd", "signalling_id", "status", "category", "operator", "is_active", "is_charter", "is_passenger"]:
+        for key in ["uid", "rid", "rsid", "ssd", "signalling_id", "status", "category", "operator", "is_active", "is_charter", "is_passenger", "delay_reason", "cancel_reason"]:
             schedule[key] = row.pop()
 
         # Associations are rather tricky customers, the select is straightforward enough
