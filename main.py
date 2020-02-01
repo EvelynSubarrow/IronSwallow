@@ -11,8 +11,8 @@ import psycopg2
 import psycopg2.extras
 import stomp
 
-from util import database, query
-from darwin import parse
+from ironswallow.util import database, query
+from ironswallow.darwin import parse
 
 LOCATIONS = {}
 REASONS = {}

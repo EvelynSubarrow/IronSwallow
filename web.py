@@ -9,9 +9,9 @@ import flask
 from flask import Response
 from flask import request
 
-from util import config
-from util import database
-from util import query
+from ironswallow.util import config
+from ironswallow.util import database
+from ironswallow.util import query
 
 app = flask.Flask(__name__)
 _web_db = None
