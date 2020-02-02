@@ -211,6 +211,11 @@ if __name__ == "__main__":
     with open("secret.json") as f:
         SECRET = json.load(f)
 
+    try:
+        __import__("_web").init(app)
+    except:
+        pass
+
     app.run(
         config.get("flask-host", "127.0.0.1"),
         config.get("flask-port", 36323),
