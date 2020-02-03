@@ -213,7 +213,7 @@ if __name__ == "__main__":
 
     try:
         __import__("_web").init(app)
-    except:
+    except ImportError as e:
         pass
 
     app.run(
