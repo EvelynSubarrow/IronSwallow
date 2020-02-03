@@ -11,6 +11,23 @@
                 <div class="note">{{ note }}</div>
             </section>
         {% endfor %}
+        {%- if schedule["cancel_reason"] or schedule["delay_reason"] -%}
+            <section>
+                <h1>Disruption messages</h1>
+            {%- for reason in [schedule["cancel_reason"], schedule["delay_reason"]] -%}
+                {%- if reason -%}
+                <p class="note">
+                    <span class="notehead">
+                        Disruption reason code <span class="normal">{{reason["code"]}}</span>
+                        {% if reason["location"] %}{{" near "*reason["near"] or " at "}}
+                        <span class="normal">{{"{name_full} ({tiploc})".format(**reason["location"]) }}</span>{% endif %}
+                    </span>
+                    {{ reason["message"] | safe }}
+                </p>
+                {%- endif -%}
+            {%- endfor -%}
+            </section>
+        {%- endif -%}
             <table>
                 <tr class="headrow">
                     <th colspan="5" class="headgroup"></th>
