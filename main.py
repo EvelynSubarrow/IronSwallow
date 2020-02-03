@@ -253,6 +253,14 @@ def connect_and_subscribe(mq):
             sleep(backoff)
     log.error("Connection attempts exhausted")
 
+def process_reason(reason):
+    return OrderedDict([
+        ("code", reason["$"]),
+        ("message", REASONS[(reason["$"], "D")]),
+        ("location", query.process_location_outline(LOCATIONS.get(reason.get("tiploc")))),
+        ("near", bool(reason.get("near"))),
+        ])
+
 def store_message(cursor, parsed) -> None:
     if not parsed:
         return
@@ -307,6 +315,9 @@ def store_message(cursor, parsed) -> None:
 
                     index += 1
 
+                elif location["tag"]=="cancelReason":
+                    c.execute("UPDATE darwin_schedules SET cancel_reason=%s WHERE rid=%s;", (json.dumps(process_reason(location)), record["rid"]))
+
             c.execute("""INSERT INTO darwin_schedules VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s::json[], %s::json[])
                 ON CONFLICT (rid) DO UPDATE SET
                 signalling_id=EXCLUDED.signalling_id, status=EXCLUDED.status, category=EXCLUDED.category,
@@ -350,14 +361,7 @@ def store_message(cursor, parsed) -> None:
                         record.get("length")))
 
                 if location["tag"]=="LateReason":
-                    reason_dict = OrderedDict([
-                        ("code", location["$"]),
-                        ("message", REASONS[(location["$"], "D")]),
-                        ("location", query.process_location_outline(LOCATIONS.get(location.get("tiploc")))),
-                        ("near", bool(location.get("near"))),
-                        ])
-
-                    c.execute("UPDATE darwin_schedules SET delay_reason=%s WHERE rid=%s;", (json.dumps(reason_dict), record["rid"]))
+                    c.execute("UPDATE darwin_schedules SET delay_reason=%s WHERE rid=%s;", (json.dumps(process_reason(location)), record["rid"]))
 
         if record["tag"]=="deactivated":
             c.execute("UPDATE darwin_schedules SET is_active=FALSE WHERE rid=%s;", (record["rid"],))
