@@ -256,7 +256,7 @@ def connect_and_subscribe(mq):
 def process_reason(reason):
     return OrderedDict([
         ("code", reason["$"]),
-        ("message", REASONS[(reason["$"], "D")]),
+        ("message", REASONS[(reason["$"], "C"*(reason["tag"]=="cancelReason") or "D")]),
         ("location", query.process_location_outline(LOCATIONS.get(reason.get("tiploc")))),
         ("near", bool(reason.get("near"))),
         ])
