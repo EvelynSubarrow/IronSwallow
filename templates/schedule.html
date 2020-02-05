@@ -28,7 +28,7 @@
             {%- endfor -%}
             </section>
         {%- endif -%}
-            <table>
+            <table class="collapse">
                 <tr class="headrow">
                     <th colspan="5" class="headgroup"></th>
                     <th colspan="3" class="headgroup">WTT</th>
@@ -49,17 +49,18 @@
                 </tr>
             {% for location in schedule["locations"] -%}
                 <tr class="primaryrow{{ " pass" if location["times"]["pass"] else ''}}{{" cancelled"*location["cancelled"]}}">
-                    <td class="tiploc borderleft">{{location["tiploc"]}}</td>
-                    <td class="crs horizontal-only">{{ location["crs_darwin"] or "" }}</td>
+                    <td data-title="tip" class="tiploc borderleft">{{location["tiploc"]}}</td>
+                    <td data-title="crs" class="crs horizontal-only">{{ location["crs_darwin"] or "" }}</td>
                     <td class="locname">{{location["name_full"]}}</td>
-                    <td class="platform borderleft borderright"> {{location["platform"].get("platform", '')}}
-                    <td class="activities borderleft borderright">{{ location["activity"] }}</td>
-                    <td class="time borderleft">{{  format_time(location, "aw") }}</td>
-                    <td class="time">{{             format_time(location, "pw") }}</td>
-                    <td class="time borderright">{{ format_time(location, "dw") }}</td>
-                    <td class="time borderleft">{{  format_time(location, "a.") }}</td>
-                    <td class="time">{{             format_time(location, "p.") }}</td>
-                    <td class="time borderright">{{ format_time(location, "d.") }}</td>
+                    <td data-title="pt." class="platform borderleft borderright"> {{location["platform"].get("platform", '')}}
+                    <td data-title="a." class="activities borderleft borderright">{{ location["activity"] }}</td>
+                    <td class="flex-break"></td>
+                    <td data-title="a" class="time borderleft">{{  format_time(location, "aw") }}</td>
+                    <td data-title="p" class="time">{{             format_time(location, "pw") }}</td>
+                    <td data-title="d" class="time borderright">{{ format_time(location, "dw") }}</td>
+                    <td data-title="a" class="time borderleft">{{  format_time(location, "a.") }}</td>
+                    <td data-title="p" class="time">{{             format_time(location, "p.") }}</td>
+                    <td data-title="d" class="time borderright">{{ format_time(location, "d.") }}</td>
 
                 </tr>
             {% for association in location["associations"] %}
