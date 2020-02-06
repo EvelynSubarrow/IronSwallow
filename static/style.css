@@ -296,20 +296,16 @@ a:hover, a:active {
         flex-basis:12%;
         min-width:6ch;
     }
-    .collapse .origin {
+
+    .sched { color:#668; }
+
+    .collapse .origin,.collapse .destination {
         flex-basis:100%;
         width:100%;
     }
-    .collapse .destination {
-        flex-basis:100%;
-        width:100%
-    }
- 
-    /* Make sure horizontal only is truly dead */
-    .collapse .horizontal-only {
-        display:none;
-    }
 
+    .locname { flex-basis:40%; }
+ 
     /*
     Label the data
     */
@@ -324,11 +320,12 @@ a:hover, a:active {
         flex-basis:100%;
     }
 
-    .sched {
-        color:#668;
+    /* Make sure horizontal only is truly dead */
+    .collapse .horizontal-only {
+        display:none;
     }
 
-    .collapse-border { border-right: 1px solid #334; }
+
 }
 
 
