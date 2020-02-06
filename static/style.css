@@ -304,7 +304,10 @@ a:hover, a:active {
         width:100%;
     }
 
-    .locname { flex-basis:40%; }
+    .locname {
+        flex-basis:40%;
+        flex-grow:4;
+    }
  
     /*
     Label the data
