@@ -266,7 +266,8 @@ a:hover, a:active {
     .collapse th, 
     .collapse td, 
     .collapse tr { 
-        display: block; 
+        display: block;
+        font-size: 9pt;
     }
  
     /* Hide table headers (but not display: none;, for accessibility) */
@@ -292,8 +293,8 @@ a:hover, a:active {
     }
 
     .collapse .time {
-        flex-basis:30%;
-        min-width:7ch;
+        flex-basis:12%;
+        min-width:6ch;
     }
     .collapse .origin {
         flex-basis:100%;
@@ -323,6 +324,11 @@ a:hover, a:active {
         flex-basis:100%;
     }
 
+    .sched {
+        color:#668;
+    }
+
+    .collapse-border { border-right: 1px solid #334; }
 }
 
 
