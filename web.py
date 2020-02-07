@@ -203,6 +203,7 @@ def get_cursor():
     if not _web_db:
         _web_db = database.DatabaseConnection()
         _web_db.connect()
+        _web_db.set_session(readonly=True)
     return _web_db.new_cursor()
 
 if __name__ == "__main__":
