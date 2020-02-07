@@ -162,6 +162,32 @@ tr:first-child {
     border-width: 0px;
 }
 
+/**/
+.associations .SC:before {
+    content:"◈ ";
+    color:#668;
+}
+.associations .JN:before {
+    content:"❖ ";
+    color:#b7b;
+}
+
+.associations .VV:before {
+    content:"❖ ";
+    color:#b7b;
+}
+
+.associations .LK:before {
+    content:"◇ ";
+    color:#663;
+}
+
+ul.associations {
+    list-style:none;
+    margin:0;
+    padding:0;
+}
+
 /* Outline table */
 .uid      { min-width: 6ch;  }
 .stp      { width: 3ch;  }

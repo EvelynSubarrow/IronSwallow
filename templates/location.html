@@ -92,12 +92,16 @@
                     <td data-title="op.">{{ schedule["operator"] }}</td>
                     <td class="origin borderleft">
                         {%- for origin in schedule["origins"] -%}
-                            <span class="{{"cancelled" if origin["cancelled"] else ''}}">{{origin["name_full"]}}</span><br>
+                            <ul class="associations">
+                                <li class="{{origin["source"]}} {{"cancelled" if origin["cancelled"] else ''}}">{{origin["name_full"]}}</li>
+                            </ul>
                         {%- endfor -%}
                     </td>
                     <td class="destination borderright">
                         {%- for destination in schedule["destinations"] -%}
-                            <span class="{{"cancelled" if destination["cancelled"] else ''}}"><a href="/d/{{destination["tiploc"]}}">{{destination["name_full"]}}</a></span><br>
+                            <ul class="associations">
+                                <li class="{{destination["source"]}} {{"cancelled" if destination["cancelled"] else ''}}"><a href="/d/{{destination["tiploc"]}}">{{destination["name_full"]}}</a></li>
+                            </ul>
                         {%- endfor -%}
                     </td>
                 </tr>
