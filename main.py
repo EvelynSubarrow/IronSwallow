@@ -333,6 +333,7 @@ def store_message(cursor, parsed) -> None:
             psycopg2.extras.execute_batch(c, """INSERT INTO darwin_schedule_locations VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT DO NOTHING;""", batch)
 
         if record["tag"]=="TS":
+            batch = []
             for location in record["list"]:
                 original_wt = form_original_wt([process_time(location.get(a)) for a in ("wta", "wtp", "wtd")])
                 if location["tag"]=="Location":
@@ -353,16 +354,19 @@ def store_message(cursor, parsed) -> None:
                         times_delay.append(bool(time_d.get("delayed")))
 
                     plat = location.get("plat", {})
-                    c.execute("""INSERT INTO darwin_schedule_status VALUES (%s,%s,%s,  %s,%s,%s,  %s,%s,%s, %s,%s,%s, %s,%s,%s, %s,%s,%s,%s,%s, %s)
-                        ON CONFLICT (rid, tiploc, original_wt) DO UPDATE SET
-                        (ta,tp,td, ta_source,tp_source,td_source, ta_type,tp_type,td_type, ta_delayed,tp_delayed,td_delayed, length, plat,plat_suppressed,plat_cis_suppressed,plat_confirmed,plat_source)=
-                        (EXCLUDED.ta,EXCLUDED.tp,EXCLUDED.td, EXCLUDED.ta_source,EXCLUDED.tp_source,EXCLUDED.td_source, EXCLUDED.ta_type,EXCLUDED.tp_type,EXCLUDED.td_type, EXCLUDED.ta_delayed,EXCLUDED.tp_delayed,EXCLUDED.td_delayed, EXCLUDED.length, EXCLUDED.plat,EXCLUDED.plat_suppressed,EXCLUDED.plat_cis_suppressed,EXCLUDED.plat_confirmed,EXCLUDED.plat_source);""", (
+                    batch.append((
                         record["rid"], location["tpl"], original_wt, *times, *times_source, *times_type, *times_delay,
                         plat.get("$"), bool(plat.get("platsup")), bool(plat.get("cisPlatsup")), bool(plat.get("conf")), plat.get("platsrc"),
                         record.get("length")))
 
                 if location["tag"]=="LateReason":
                     c.execute("UPDATE darwin_schedules SET delay_reason=%s WHERE rid=%s;", (json.dumps(process_reason(location)), record["rid"]))
+
+            psycopg2.extras.execute_batch(c, """INSERT INTO darwin_schedule_status VALUES (%s,%s,%s,  %s,%s,%s,  %s,%s,%s, %s,%s,%s, %s,%s,%s, %s,%s,%s,%s,%s, %s)
+                ON CONFLICT (rid, tiploc, original_wt) DO UPDATE SET
+                (ta,tp,td, ta_source,tp_source,td_source, ta_type,tp_type,td_type, ta_delayed,tp_delayed,td_delayed, length, plat,plat_suppressed,plat_cis_suppressed,plat_confirmed,plat_source)=
+                (EXCLUDED.ta,EXCLUDED.tp,EXCLUDED.td, EXCLUDED.ta_source,EXCLUDED.tp_source,EXCLUDED.td_source, EXCLUDED.ta_type,EXCLUDED.tp_type,EXCLUDED.td_type, EXCLUDED.ta_delayed,EXCLUDED.tp_delayed,EXCLUDED.td_delayed, EXCLUDED.length, EXCLUDED.plat,EXCLUDED.plat_suppressed,EXCLUDED.plat_cis_suppressed,EXCLUDED.plat_confirmed,EXCLUDED.plat_source);""",
+                batch)
 
         if record["tag"]=="deactivated":
             c.execute("UPDATE darwin_schedules SET is_active=FALSE WHERE rid=%s;", (record["rid"],))
