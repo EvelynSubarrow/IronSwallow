@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import logging, json, datetime, io, zlib, gzip, multiprocessing, ftplib
+import logging, json, datetime, io, zlib, gzip, multiprocessing, ftplib, tempfile
 from time import sleep
 from decimal import Decimal
 from collections import OrderedDict
@@ -198,28 +198,27 @@ def incorporate_ftp(c) -> None:
             ftp.retrlines("NLST snapshot", file_list.append)
             ftp.retrlines("NLST pushport", file_list.append)
 
-            for file in file_list:
-                log.info("FTP retrieving {}".format(file))
-                read_buffer = bytearray()
-                ftp.retrbinary("RETR {}".format(file), read_buffer.extend)
-                actual_files.append((file, read_buffer))
+            for r_filename in file_list:
+                temp_file = tempfile.TemporaryFile()
+                log.info("FTP retrieving {}".format(r_filename))
+                ftp.retrbinary("RETR {}".format(r_filename), temp_file.write)
+                temp_file.seek(0)
+                actual_files.append((r_filename, temp_file))
 
+            log.info("Purging database")
             c.execute("BEGIN;")
-            c.execute("DELETE FROM darwin_schedules;")
-            c.execute("DELETE FROM darwin_schedule_locations;")
-            c.execute("DELETE FROM darwin_schedule_status;")
-            c.execute("DELETE FROM darwin_associations;")
-            c.execute("DELETE FROM darwin_messages;")
+            c.execute("TRUNCATE TABLE darwin_schedule_locations,darwin_schedule_status,darwin_associations,darwin_schedules,darwin_messages;")
 
-            pool = multiprocessing.Pool()
-            while actual_files:
-                file, contents = actual_files[0]
-                log.info("Enqueueing retrieved file {}".format(file))
-                lines = gzip.decompress(contents).split(b"\n")
-                for result in pool.imap(parse.parse_darwin, lines):
-                    store_message(c,result)
-                del lines
-                del actual_files[0]
+            with multiprocessing.Pool(4) as pool:
+                while actual_files:
+                    file_name, file = actual_files[0]
+                    log.info("Enqueueing retrieved file {}".format(file_name))
+
+                    for result in pool.imap(parse.parse_darwin, gzip.open(file)):
+                        store_message(c,result)
+
+                    file.close()
+                    del actual_files[0]
 
             return
         except ftplib.Error as e:
