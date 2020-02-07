@@ -357,7 +357,7 @@ def store_message(cursor, parsed) -> None:
                     batch.append((
                         record["rid"], location["tpl"], original_wt, *times, *times_source, *times_type, *times_delay,
                         plat.get("$"), bool(plat.get("platsup")), bool(plat.get("cisPlatsup")), bool(plat.get("conf")), plat.get("platsrc"),
-                        location.get("length")))
+                    location.get("length", {}).get("$")))
 
                 if location["tag"]=="LateReason":
                     c.execute("UPDATE darwin_schedules SET delay_reason=%s WHERE rid=%s;", (json.dumps(process_reason(location)), record["rid"]))
