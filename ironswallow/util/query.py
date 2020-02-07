@@ -40,6 +40,7 @@ def form_location_select(names) -> str:
     stat_select = ""
     for location_name, stat_name, loc_dict_name in names:
         stat_select += "{ln}.type, {ld}.dict, {ln}.activity, {ln}.cancelled, {ln}.wta, {ln}.pta, {ln}.wtp, NULL, {ln}.wtd, {ln}.ptd,\n".format(ln=location_name, ld=loc_dict_name)
+        stat_select += "{sn}.length,\n".format(sn=stat_name)
         stat_select += "{sn}.plat, {sn}.plat_suppressed, {sn}.plat_cis_suppressed, {sn}.plat_confirmed, {sn}.plat_source,\n".format(sn=stat_name)
         for time_name in ("ta", "tp", "td"):
             stat_select += "{sn}.{tn}, {sn}.{tn}_source, {sn}.{tn}_type, {sn}.{tn}_delayed{comma}\n".format(
@@ -74,6 +75,8 @@ def location_dict(row, preserve_null_times=False, preserve_null_platform=False) 
         if preserve_null_times:
             out_row["times"][time_name]["estimated"] = None
             out_row["times"][time_name]["actual"] = None
+
+    out_row["length"] = row.pop()
 
     out_row["platform"] = OrderedDict()
     for platform_field_name in ("platform", "suppressed", "cis_suppressed", "confirmed", "source"):
