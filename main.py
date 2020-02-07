@@ -207,9 +207,11 @@ def incorporate_ftp(c) -> None:
 
             log.info("Purging database")
             c.execute("BEGIN;")
+            c.execute("ALTER TABLE darwin_schedules DISABLE TRIGGER USER;")
             c.execute("TRUNCATE TABLE darwin_schedule_locations,darwin_schedule_status,darwin_associations,darwin_schedules,darwin_messages;")
+            c.execute("ALTER TABLE darwin_schedules ENABLE TRIGGER USER;")
 
-            with multiprocessing.Pool(4) as pool:
+            with multiprocessing.Pool(8) as pool:
                 while actual_files:
                     file_name, file = actual_files[0]
                     log.info("Enqueueing retrieved file {}".format(file_name))
