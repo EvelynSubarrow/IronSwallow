@@ -63,24 +63,24 @@
                     <td data-title="d" class="time borderright">{{ format_time(location, "d.") }}</td>
 
                 </tr>
-            {% for association in location["associations"] %}
-                <tr>
-                    <td class="associations" colspan="16">
-                        <table class="associations">
-                            <tr>
-                                <td class="assoc_assoc borderright">{{ association["from"]*"←" or "→" }}</td>
-                                <td class="category borderleft">{{ association["category"] }}</td>
-                                <td class="uid borderleft">{{ association["assoc"]["rid"] }}</td>
-                                <td class="assoc_direction">{{ association["from"]*"←" or "→" }}</td>
-                                <td class="tiploc">{{ association["assoc"]["there"]["tiploc"] }}</td>
-                                <td class="crs">{{ association["assoc"]["there"]["crs_darwin"] or ''}}</td>
-                                <td class="locname">{{ association["assoc"]["there"]["name_full"] }}</td>
-                            </tr>
-                        </table>
+            {%- if location["associations"] -%}
+                <tr class="associations">
+                    <td colspan="16">
+                        <ul class="associations">
+                        {% for association in location["associations"] %}
+                            <li class="{{association["category"]}}">
+                                <span class="category">{{ association["category"] }}</span>
+                                <span class="rid"><a href="/s/{{ association["assoc"]["rid"] }}">{{ association["assoc"]["rid"] }}</a></span>
+                                <span class="assoc_direction">{{ association["from"]*"←" or "→" }}</span>
+                                <span class="tiploc">{{ association["assoc"]["there"]["tiploc"] }}</span>
+                                <span class="crs">{{ association["assoc"]["there"]["crs_darwin"] or ''}}</span>
+                                <span class="locname">{{ association["assoc"]["there"]["name_full"] }}</span>
+                            </li>
+                        {% endfor  %}
+                        </ul>
                     </td>
                 </tr>
-            {% endfor  %}
-
+            {%- endif -%}
             {% endfor %}
             </table>
         {% endif -%}

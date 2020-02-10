@@ -162,7 +162,7 @@ tr:first-child {
     border-width: 0px;
 }
 
-/**/
+/* Elements used in both */
 .associations .SC:before {
     content:"◈ ";
     color:#668;
@@ -182,10 +182,20 @@ tr:first-child {
     color:#663;
 }
 
+.associations .NP:before {
+    content:"◈ ";
+    color:#668;
+}
+
 ul.associations {
     list-style:none;
     margin:0;
     padding:0;
+}
+
+.cancelled {
+    text-decoration: line-through;
+    color:#668;
 }
 
 /* Outline table */
@@ -246,8 +256,6 @@ table.associations {
 .operational { color:#668; }
 
 .passenger.highlight { color: #ddf; }
-
-.cancelled { text-decoration: line-through; }
 
 /* General links */
 a:link {
