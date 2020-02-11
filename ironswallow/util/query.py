@@ -75,11 +75,7 @@ def location_dict(row, preserve_null_times=False, preserve_null_platform=False) 
             out_row["times"][time_name]["estimated"] = None
             out_row["times"][time_name]["actual"] = None
 
-    out_row["platform"] = OrderedDict()
-    for platform_field_name in ("platform", "suppressed", "cis_suppressed", "confirmed", "source"):
-        platform_field = row.pop()
-        if platform_field!=None or preserve_null_platform:
-            out_row["platform"][platform_field_name] = platform_field
+    out_row["platform"] = OrderedDict([(a, row.pop()) for a in ("platform", "suppressed", "cis_suppressed", "confirmed", "source")])
 
     for time_name in ("arrival", "pass", "departure"):
         darwin_time = OrderedDict([(a, row.pop()) for a in ("time", "source", "type", "delayed")])

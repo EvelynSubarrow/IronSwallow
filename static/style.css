@@ -236,16 +236,8 @@ td.associations {
     width:100%;
     border: 1px solid #334;
     border-style: none solid none solid;
-    background-color: #020005;
 }
 
-table.associations {
-    margin-top:0;
-    margin-bottom:0;
-}
-
-.assoc_assoc { min-width:1ch;}
-.assoc_type  { min-width:1ch;}
 .assoc_direction { min-width:4ch;}
 
 .borderright { border-right: 1px solid #334; }
