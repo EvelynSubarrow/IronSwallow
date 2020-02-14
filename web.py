@@ -69,11 +69,10 @@ def json_departures(location, time):
             time = datetime.datetime.strptime(time, "%Y-%m-%dT%H:%M:%S")
 
         with get_cursor() as c:
-            struct = OrderedDict([("success", True), ("message", None)])
-            struct["response"] = query.station_board(c, (location,), time, period=500)
+            response = query.station_board(c, (location,), time, period=500)
 
-        if struct["response"]:
-            return Response(json.dumps(struct, indent=2, default=query.json_default), mimetype="application/json", status=status)
+        if response:
+            return Response(json.dumps(response, indent=2, default=query.json_default), mimetype="application/json", status=status)
         else:
             status, failure_message = 404, "Location(s) not found"
     except ValueError as e:
@@ -81,7 +80,7 @@ def json_departures(location, time):
     except ValueError as e:
         if not failure_message:
             status, failure_message = 500, "Unhandled exception"
-    return Response(json.dumps({"success": False, "message":failure_message}, indent=2), mimetype="application/json", status=status)
+    return Response(json.dumps({"status": status, "message":failure_message}, indent=2), mimetype="application/json", status=status)
 
 @app.route('/json/service/<id>', defaults={"date": None})
 @app.route('/json/service/<id>/<date>')
@@ -97,11 +96,10 @@ def json_service(id, date):
         elif date!=None:
             date = datetime.datetime.strptime(date, "%Y-%m-%d").date()
         with get_cursor() as c:
-            struct = OrderedDict([("success", True), ("message", None)])
-            struct["response"] = query.service(c, id, date)
+            response = query.service(c, id, date)
 
-        if struct["response"]:
-            return Response(json.dumps(struct, indent=2, default=query.json_default), mimetype="application/json", status=status)
+        if response:
+            return Response(json.dumps(response, indent=2, default=query.json_default), mimetype="application/json", status=status)
         else:
             status,failure_message = 404, "Schedule not found"
     except ValueError as e:
@@ -109,7 +107,7 @@ def json_service(id, date):
     except Exception as e:
         if not failure_message:
             status, failure_message = 500, "Unhandled exception"
-    return Response(json.dumps({"success": False, "message":failure_message}, indent=2), mimetype="application/json", status=status)
+    return Response(json.dumps({"status": status, "message":failure_message}, indent=2), mimetype="application/json", status=status)
 
 @app.route('/departures/<location>', defaults={"time": "now"})
 @app.route('/departures/<location>/<time>')
@@ -203,7 +201,6 @@ def get_cursor():
     if not _web_db:
         _web_db = database.DatabaseConnection()
         _web_db.connect()
-        _web_db.set_session(readonly=True)
     return _web_db.new_cursor()
 
 if __name__ == "__main__":
