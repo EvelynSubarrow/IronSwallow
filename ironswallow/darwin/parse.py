@@ -21,7 +21,7 @@ class DarwinParser(xml.sax.ContentHandler):
         name = name.split(":")[-1]
 
         if ".".join(self._path).startswith(self._detokenise):
-            self.characters("<{} {}>".format(name, " ".join(['{}="{}"'.format(k,v) for k,v in attrs.items()])))
+            self.characters("<{}{}{}>".format(name, " "*bool(len(attrs)), " ".join(['{}="{}"'.format(k,v) for k,v in attrs.items()])))
         else:
             self._path.append(name)
 
