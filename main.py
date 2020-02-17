@@ -135,10 +135,10 @@ def renew_schedule_association_meta(c, main_rid=None, assoc_rid=None) -> None:
         row["main_origins"] = [json.dumps(a) for a in row["main_origins"]]
         row["assoc_destinations"] = [json.dumps(a) for a in row["assoc_destinations"]]
 
-        if not any([a.get("association_tiploc")==row["tiploc"] and a["category"]==row["category"] for a in row["main_destinations"]]):
+        if not any([a.get("association_tiploc")==row["tiploc"] and a["source"]==row["category"] for a in row["main_destinations"]]):
             c.execute("""UPDATE darwin_schedules SET (destinations)=(darwin_schedules.destinations || %s::json[]) WHERE rid=%s;""", (row["assoc_destinations"], row["main_rid"]))
 
-        if not any([a.get("association_tiploc")==row["tiploc"] and a["category"]==row["category"] for a in row["assoc_origins"]]):
+        if not any([a.get("association_tiploc")==row["tiploc"] and a["source"]==row["category"] for a in row["assoc_origins"]]):
             c.execute("""UPDATE darwin_schedules SET (origins)=(darwin_schedules.origins || %s::json[]) WHERE rid=%s;""", (row["main_origins"],row["assoc_rid"]))
 
 def renew_schedule_meta(c) -> None:
