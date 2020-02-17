@@ -378,8 +378,8 @@ def store_message(cursor, parsed) -> None:
 
             # Some messages are enclosed in <p> tags, some have a <p></p> in them.
             # Thank you National Rail, very cool
-            pattern = re.compile("^<p>(.+)</p>$|^(.+)$")
-            message = pattern.match(message).group(0).replace("<p></p>", "")
+            pattern = re.compile("^(?:<p>)?(.+)(?:</p>)?$")
+            message = pattern.match(message).group(1).replace("<p></p>", "")
 
             if station_list:
                 c.execute("""INSERT INTO darwin_messages VALUES (%s, %s, %s, %s, %s, %s) ON CONFLICT (message_id)
