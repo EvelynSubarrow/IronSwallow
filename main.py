@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import logging, json, datetime, io, zlib, gzip, multiprocessing, ftplib, tempfile
+import logging, json, datetime, io, zlib, gzip, multiprocessing, ftplib, tempfile, re
 from time import sleep
 from decimal import Decimal
 from collections import OrderedDict
@@ -372,7 +372,15 @@ def store_message(cursor, parsed) -> None:
             c.execute("UPDATE darwin_schedules SET is_active=FALSE WHERE rid=%s;", (record["rid"],))
         if record["tag"]=="OW":
             station_list = [a["crs"] for a in record["list"] if a["tag"]=="Station"]
+
+
             message = [a.get("$") or '' for a in record["list"] if a["tag"]=="Msg"][0]
+
+            # Some messages are enclosed in <p> tags, some have a <p></p> in them.
+            # Thank you National Rail, very cool
+            pattern = re.compile("^<p>(.+)</p>$|^(.+)$")
+            message = pattern.match(message).group(0).replace("<p></p>", "")
+
             if station_list:
                 c.execute("""INSERT INTO darwin_messages VALUES (%s, %s, %s, %s, %s, %s) ON CONFLICT (message_id)
                     DO UPDATE SET (category, severity, suppress, stations, message)=
