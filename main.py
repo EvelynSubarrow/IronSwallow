@@ -378,7 +378,7 @@ def store_message(cursor, parsed) -> None:
 
             # Some messages are enclosed in <p> tags, some have a <p></p> in them.
             # Thank you National Rail, very cool
-            pattern = re.compile("^(?:<p>)?(.+)(?:</p>)?$")
+            pattern = re.compile("^(?:<p>)?([^<]+)(?:</p>)?$")
             message = pattern.match(message).group(1).replace("<p></p>", "")
 
             if station_list:
