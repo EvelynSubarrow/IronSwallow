@@ -52,7 +52,7 @@
                     <td class="tiploc borderleft">{{location["tiploc"]}}</td>
                     <td class="crs horizontal-only">{{ location["crs_darwin"] or "" }}</td>
                     <td class="locname">{{location["name_full"]}}</td>
-                <td data-title="pt." class="platform borderleft borderright"> {{ (location["platform"].get("suppressed",False)*"*" or ' ') + (location["platform"].get("platform") or "") + (location["platform"].get("confirmed",False)*"." or "")}}</td>
+                    <td data-title="pt." class="platform borderleft borderright"> {{ (location["platform"].get("suppressed",False)*"*" or ' ') + (location["platform"].get("platform") or "") + (location["platform"].get("confirmed",False)*"." or "")}}</td>
                     <td data-title="a." class="activities borderleft borderright">{{ location["activity"] }}</td>
                     <td class="flex-break"></td>
                     <td data-title="a" class="time sched borderleft">{{  format_time(location, "aw") }}</td>
