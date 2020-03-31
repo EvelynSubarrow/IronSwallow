@@ -1,15 +1,19 @@
 import io, xml.sax
 from collections import OrderedDict
+from typing import Optional
 
-def parse_darwin(message) -> dict:
+
+def parse_darwin(message) -> Optional[dict]:
     if message:
         return DarwinParser().parse(io.StringIO(message.decode("utf8")))["Pport"].get("uR", {})
+
 
 def parse_xml(message) -> dict:
     return DarwinParser().parse(io.StringIO(message.decode("utf8")))
 
+
 class DarwinParser(xml.sax.ContentHandler):
-    def __init__(self, list_paths=["Pport.uR", "Pport.uR.schedule", "Pport.uR.TS", "Pport.uR.OW", "PportTimetableRef", "PportTimetableRef.LateRunningReasons", "PportTimetableRef.CancellationReasons"], detokenise="Pport.uR.OW.Msg", strip_whitespace=True):
+    def __init__(self, list_paths=("Pport.uR", "Pport.uR.schedule", "Pport.uR.TS", "Pport.uR.OW", "PportTimetableRef", "PportTimetableRef.LateRunningReasons", "PportTimetableRef.CancellationReasons"), detokenise="Pport.uR.OW.Msg", strip_whitespace=True):
         self._path = []
         self._root = OrderedDict()
         self._dicts = [self._root]
@@ -17,7 +21,7 @@ class DarwinParser(xml.sax.ContentHandler):
         self._detokenise = detokenise
         self._strip_whitespace = strip_whitespace
 
-    def startElement(self, name, attrs):
+    def startElement(self, name, attrs) -> None:
         name = name.split(":")[-1]
 
         if ".".join(self._path).startswith(self._detokenise):
@@ -38,7 +42,7 @@ class DarwinParser(xml.sax.ContentHandler):
             if self._path in self._list_paths:
                 element_struct["list"] = []
 
-    def endElement(self, name):
+    def endElement(self, name) -> None:
         name = name.split(":")[-1]
 
         if ".".join(self._path).startswith(self._detokenise) and not self._path[-1]==name:
@@ -47,12 +51,12 @@ class DarwinParser(xml.sax.ContentHandler):
             self._path.pop()
             self._dicts.pop()
 
-    def characters(self, data):
+    def characters(self, data) -> None:
         if "$" not in self._dicts[-1]:
             self._dicts[-1]["$"] = ""
         if (not data.isspace() and not self._dicts[-1]["$"].isspace()) or not self._strip_whitespace:
             self._dicts[-1]["$"] += data
 
-    def parse(self, f):
+    def parse(self, f) -> dict:
         xml.sax.parse(f, self)
         return self._root

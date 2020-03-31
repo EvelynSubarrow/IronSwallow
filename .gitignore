@@ -1,2 +1,5 @@
 secret.json
 _*
+!__init__.py
+.*
+!.keep
