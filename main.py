@@ -217,7 +217,10 @@ def incorporate_ftp(c) -> None:
                     log.info("Enqueueing retrieved file {}".format(file_name))
 
                     for result in pool.imap(parse.parse_darwin, gzip.open(file)):
-                        store_message(c,result)
+                        try:
+                            store_message(c,result)
+                        except Exception as e:
+                            log.exception(e)
 
                     file.close()
                     del actual_files[0]
@@ -417,7 +420,10 @@ class Listener(stomp.ConnectionListener):
 
         message = zlib.decompress(message, zlib.MAX_WBITS | 32)
 
-        store_message(self.cursor, parse.parse_darwin(message))
+        try:
+            store_message(self.cursor, parse.parse_darwin(message))
+        except Exception as e:
+            log.exception(e)
         self._mq.ack(id=headers['message-id'], subscription=headers['subscription'])
 
         c.execute("""INSERT INTO last_received_sequence VALUES (0, %s, %s)
