@@ -410,29 +410,32 @@ class Listener(stomp.ConnectionListener):
         self.cursor = cursor
 
     def on_message(self, headers, message):
-        c = self.cursor
-        c.execute("BEGIN;")
-
-        c.execute("SELECT * FROM last_received_sequence;")
-        row = c.fetchone()
-        if row and ((row[1]+5)%10000000)<=int(headers["SequenceNumber"]) < 10000000-5:
-            log.error("Skipped sequence count exceeds limit ({}->{})".format(row[1], headers["SequenceNumber"]))
-
-        message = zlib.decompress(message, zlib.MAX_WBITS | 32)
-
         try:
-            store_message(self.cursor, parse.parse_darwin(message))
+            c = self.cursor
+            c.execute("BEGIN;")
+    
+            c.execute("SELECT * FROM last_received_sequence;")
+            row = c.fetchone()
+            if row and ((row[1]+5)%10000000)<=int(headers["SequenceNumber"]) < 10000000-5:
+                log.error("Skipped sequence count exceeds limit ({}->{})".format(row[1], headers["SequenceNumber"]))
+    
+            message = zlib.decompress(message, zlib.MAX_WBITS | 32)
+    
+            try:
+                store_message(self.cursor, parse.parse_darwin(message))
+            except Exception as e:
+                log.exception(e)
+            self._mq.ack(id=headers['message-id'], subscription=headers['subscription'])
+    
+            c.execute("""INSERT INTO last_received_sequence VALUES (0, %s, %s)
+                ON CONFLICT (id)
+                DO UPDATE SET sequence=EXCLUDED.sequence, time_acquired=EXCLUDED.time_acquired;""", (
+                headers["SequenceNumber"], datetime.datetime.utcnow()))
+    
+            c.execute("COMMIT;")
         except Exception as e:
             log.exception(e)
-        self._mq.ack(id=headers['message-id'], subscription=headers['subscription'])
-
-        c.execute("""INSERT INTO last_received_sequence VALUES (0, %s, %s)
-            ON CONFLICT (id)
-            DO UPDATE SET sequence=EXCLUDED.sequence, time_acquired=EXCLUDED.time_acquired;""", (
-            headers["SequenceNumber"], datetime.datetime.utcnow()))
-
-        c.execute("COMMIT;")
-
+        
     def on_error(self, headers, message):
         log.error('received an error "%s"' % message)
 
