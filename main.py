@@ -233,7 +233,7 @@ def connect_and_subscribe(mq):
     for n in range(1,31):
         try:
             log.info("Connecting... (attempt %s)" % n)
-            mq.start()
+            #mq.start()
             mq.connect(**{
                 "username": SECRET["username"],
                 "passcode": SECRET["password"],
@@ -248,9 +248,10 @@ def connect_and_subscribe(mq):
                 })
             log.info("Connected!")
             return
-        except:
+        except Exception as e:
             backoff = min(n**2, 600)
             log.error("Failed to connect, waiting {}s".format(backoff))
+            log.exception(e)
             sleep(backoff)
     log.error("Connection attempts exhausted")
 
