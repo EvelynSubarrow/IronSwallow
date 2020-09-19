@@ -127,7 +127,7 @@ def html_location(location, time):
 
         with get_cursor() as c:
             last_retrieved = query.last_retrieved(c)
-            if not last_retrieved or (datetime.datetime.now()-last_retrieved).seconds > 300:
+            if not last_retrieved or (datetime.datetime.utcnow()-last_retrieved).seconds > 300:
                 notes.append("Last Darwin message was parsed more than five minutes ago, information is likely out of date.")
 
             board = query.station_board(c, (location,), time, limit=50)
@@ -163,7 +163,7 @@ def html_service(id, date):
 
         with get_cursor() as c:
             last_retrieved = query.last_retrieved(c)
-            if not last_retrieved or (datetime.datetime.now()-last_retrieved).seconds > 300:
+            if not last_retrieved or (datetime.datetime.utcnow()-last_retrieved).seconds > 300:
                 notes.append("Last Darwin message was parsed more than five minutes ago, information is likely out of date.")
 
             schedule=query.service(c, id, date)
