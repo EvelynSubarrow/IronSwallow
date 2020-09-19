@@ -1,5 +1,8 @@
 secret.json
+config.json
+logs/
 _*
 !__init__.py
 .*
 !.keep
+venv/
