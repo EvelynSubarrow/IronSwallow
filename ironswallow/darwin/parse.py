@@ -1,11 +1,13 @@
-import io, xml.sax
+import io, xml.sax, re
 from collections import OrderedDict
 from typing import Optional
+
+from darwin import kb_consts
+
 
 DARWIN_PATHS = ("Pport.uR", "Pport.uR.schedule", "Pport.uR.TS", "Pport.uR.OW", "PportTimetableRef", "PportTimetableRef.LateRunningReasons", "PportTimetableRef.CancellationReasons")
 DARWIN_DETOKENISE = "Pport.uR.OW.Msg"
 
-KB_PATHS = ("StationList",)
 
 def parse_darwin(message) -> Optional[dict]:
     if message:
@@ -13,7 +15,7 @@ def parse_darwin(message) -> Optional[dict]:
 
 
 def parse_kb(text) -> dict:
-    return DarwinParser(KB_PATHS, include_tags=False).parse(io.StringIO(text))
+    return DarwinParser(include_tags=False, folded_list=kb_consts.FOLD_LISTS, exclude_data=kb_consts.EXCLUDE_DATA, collapse_data=kb_consts.FLAT_DATA, collapse_data_types=kb_consts.DATA_TYPES).parse(io.StringIO(text))
 
 
 def parse_xml(message) -> dict:
@@ -21,7 +23,14 @@ def parse_xml(message) -> dict:
 
 
 class DarwinParser(xml.sax.ContentHandler):
-    def __init__(self, list_paths=(), detokenise="<PLACEHOLDER>", folded_list=(), exclude_data=(), collapse_data=(), strip_whitespace=True, include_tags=True, profile=False):
+    _TYPE_REGEXES = [ (re.compile(k),v) for k,v in
+        [(r"^[+-]?\d+\.\d+$", float),
+        (r"^[+-]?\d+$", int),
+        (r"^(?:true|false)$", bool),
+        (r".*", str)]
+    ]
+
+    def __init__(self, list_paths=(), detokenise="<PLACEHOLDER>", folded_list=(), exclude_data=(), collapse_data=(), collapse_data_types={}, strip_whitespace=True, include_tags=True, profile=False):
         self._path = []
         self._root = OrderedDict()
         self._dicts = [self._root]
@@ -30,10 +39,12 @@ class DarwinParser(xml.sax.ContentHandler):
         self._folded_list = set(folded_list)
         self._exclude_data = set(exclude_data)
         self._collapse_data = set(collapse_data)
+        self._collapse_types = collapse_data_types
 
         self._collision_paths = []
         self._data_path_status = {}
         self._data_path_count = {}
+        self._data_enum = {}
         self._detokenise = detokenise
         self._strip_whitespace = strip_whitespace
         self._include_tags = include_tags
@@ -89,6 +100,18 @@ class DarwinParser(xml.sax.ContentHandler):
         if ".".join(self._path).startswith(self._detokenise) and not self._path[-1]==name:
             self.characters("</{}>".format(name))
         elif current_path in self._collapse_data:
+            contents = self._dicts[-1][self._path[-1]]
+
+            if current_path in self._collapse_types:
+                # coerce type
+                self._dicts[-1][self._path[-1]] = self._collapse_types[current_path](contents)
+            elif self._profile:
+
+                # slightly silly layout for this because it means you'll need a second pass for typing. sorry.
+                if self._profile and contents and current_path not in self._list_paths and current_path not in self._folded_list:
+                    if not self._data_enum.get(current_path): self._data_enum[current_path] = set()
+                    self._data_enum[current_path] |= {next(iter([v for k, v in self._TYPE_REGEXES if k.match(contents.rstrip())]))}
+
             # Pop path (because that is set) but not dict (because this isn't a dict!!)
             self._path.pop()
         else:
@@ -124,4 +147,5 @@ class DarwinParser(xml.sax.ContentHandler):
         if self._profile:
             self._data_path_status = [k for k, v in self._data_path_status.items() if not v]
             self._data_path_count = [k for k, v in self._data_path_count.items() if not v]
+            self._data_enum = {k: list(v)[0] for k,v in self._data_enum.items() if v != {str} and len(v)==1}
         return self._root
