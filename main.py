@@ -225,6 +225,7 @@ def incorporate_ftp(c) -> None:
                     file.close()
                     del actual_files[0]
 
+            c.execute("COMMIT;")
             return
         except ftplib.Error as e:
             backoff = min(n**2, 600)
@@ -393,14 +394,18 @@ def store_message(cursor, parsed) -> None:
             else:
                 c.execute("DELETE FROM darwin_messages WHERE message_id=%s;", (record["id"],))
         if record["tag"]=="association":
-            if record["category"]=="JJ":
-                # Semantically it makes a lot more sense to invert joins, so that all associations point to the "next" service
-                # JN should hopefully make this distinct from JJ
-                c.execute("""INSERT INTO darwin_associations VALUES (%s, %s, %s, %s, %s, %s) ON CONFLICT(tiploc,main_rid,assoc_rid) DO NOTHING;""",
-                    ("JN", record["tiploc"], record["assoc"]["rid"], full_original_wt(record["assoc"]), record["main"]["rid"], full_original_wt(record["main"])))
+            c.execute("SELECT count(*) FROM darwin_schedules WHERE rid IN %s;", ((record["assoc"]["rid"], record["main"]["rid"]),))
+            if c.fetchone()[0] != 2:
+                logging.error("Orphan association: main ({}), assoc ({}) cat ({}) loc ({})".format(record["main"]["rid"], record["assoc"]["rid"], record["category"], record["tiploc"]))
             else:
-                c.execute("""INSERT INTO darwin_associations VALUES (%s, %s, %s, %s, %s, %s) ON CONFLICT(tiploc,main_rid,assoc_rid) DO NOTHING;""",
-                    (record["category"], record["tiploc"], record["main"]["rid"], full_original_wt(record["main"]), record["assoc"]["rid"], full_original_wt(record["assoc"])))
+                if record["category"]=="JJ":
+                    # Semantically it makes a lot more sense to invert joins, so that all associations point to the "next" service
+                    # JN should hopefully make this distinct from JJ
+                    c.execute("""INSERT INTO darwin_associations VALUES (%s, %s, %s, %s, %s, %s) ON CONFLICT(tiploc,main_rid,assoc_rid) DO NOTHING;""",
+                        ("JN", record["tiploc"], record["assoc"]["rid"], full_original_wt(record["assoc"]), record["main"]["rid"], full_original_wt(record["main"])))
+                else:
+                    c.execute("""INSERT INTO darwin_associations VALUES (%s, %s, %s, %s, %s, %s) ON CONFLICT(tiploc,main_rid,assoc_rid) DO NOTHING;""",
+                        (record["category"], record["tiploc"], record["main"]["rid"], full_original_wt(record["main"]), record["assoc"]["rid"], full_original_wt(record["assoc"])))
 
             # Make sure origin/dest lists are updated as appropriate
             renew_schedule_association_meta(c, record["main"]["rid"], record["assoc"]["rid"])
