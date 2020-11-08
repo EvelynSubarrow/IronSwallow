@@ -477,8 +477,9 @@ if __name__ == "__main__":
             log.info("Last retrieval too old, using FTP snapshots")
             incorporate_ftp(cursor)
 
-        mq.set_listener('iron-swallow', Listener(mq, cursor))
-        connect_and_subscribe(mq)
+        if not SECRET.get("no_listen_stomp"):
+            mq.set_listener('iron-swallow', Listener(mq, cursor))
+            connect_and_subscribe(mq)
 
         while True:
             with db_connection.new_cursor() as c2:
