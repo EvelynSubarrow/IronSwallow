@@ -396,14 +396,21 @@ def store_message(cursor, parsed) -> None:
         if record["tag"]=="association":
             main_owt = full_original_wt(record["main"])
             assoc_owt = full_original_wt(record["assoc"])
+
+            # thank you psycopg2 very cool
             c.execute("SELECT count(*) FROM darwin_schedules WHERE rid IN %s;", ((record["assoc"]["rid"], record["main"]["rid"]),))
+            ct_a = c.fetchone()[0]
             c.execute("SELECT count(*) FROM darwin_schedule_locations WHERE rid=%s AND original_wt=%s AND tiploc=%s;", (record["assoc"]["rid"], assoc_owt, record["tiploc"]))
+            ct_b = c.fetchone()[0]
             c.execute("SELECT count(*) FROM darwin_schedule_locations WHERE rid=%s AND original_wt=%s AND tiploc=%s;", (record["main"]["rid"], main_owt, record["tiploc"]))
-            if c.fetchone()[0] != 2:
+            ct_c = c.fetchone()[0]
+
+
+            if ct_a != 2:
                 logging.error("Orphan association: main ({}), assoc ({}) cat ({}) loc ({})".format(record["main"]["rid"], record["assoc"]["rid"], record["category"], record["tiploc"]))
-            elif c.fetchone()[0] != 1:
+            elif ct_b != 1:
                 logging.error("Orphan loc association: main ({}), assoc (.{}.) cat ({}) loc ({})".format(record["main"]["rid"], record["assoc"]["rid"], record["category"], record["tiploc"]))
-            elif c.fetchone()[0] != 1:
+            elif ct_c != 1:
                 logging.error("Orphan loc association: main (.{}.), assoc ({}) cat ({}) loc ({})".format(record["main"]["rid"], record["assoc"]["rid"], record["category"], record["tiploc"]))
             else:
                 if record["category"]=="JJ":
@@ -414,6 +421,7 @@ def store_message(cursor, parsed) -> None:
                 else:
                     c.execute("""INSERT INTO darwin_associations VALUES (%s, %s, %s, %s, %s, %s) ON CONFLICT(tiploc,main_rid,assoc_rid) DO NOTHING;""",
                         (record["category"], record["tiploc"], record["main"]["rid"], full_original_wt(record["main"]), record["assoc"]["rid"], assoc_owt))
+
 
             # Make sure origin/dest lists are updated as appropriate
             renew_schedule_association_meta(c, record["main"]["rid"], record["assoc"]["rid"])
