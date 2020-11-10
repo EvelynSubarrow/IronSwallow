@@ -221,6 +221,7 @@ def incorporate_ftp(c) -> None:
                             store_message(c,result)
                         except Exception as e:
                             log.exception(e)
+                            raise e
 
                     file.close()
                     del actual_files[0]
@@ -277,6 +278,17 @@ def store_message(cursor, parsed) -> None:
 
             index = 0
             last_time, ssd_offset = None, 0
+
+            # I feel like I owe an explanation for this abomination, so here we go - it turns out that breaking a
+            # foreign key reference by means other than straightforward deletion isn't something that you can handle
+            # with constraints in psql. Ideally you could very neatly put aside something that didn't match back
+            # up, but that's just not how it goes
+            # The select here is so bizarre just so this can be fed direct back into the insert later on
+            c.execute("SELECT category,tiploc,main_rid,main_original_wt,assoc_rid,assoc_original_wt, "
+                      "tiploc,main_rid,main_original_wt,"
+                      "tiploc,assoc_rid,assoc_original_wt "
+                      "FROM darwin_associations WHERE main_rid=%s OR assoc_rid=%s", (record["rid"], record["rid"]))
+            associations_held_back = c.fetchall()
 
             c.execute("DELETE FROM darwin_schedule_locations WHERE rid=%s;", (record["rid"],))
 
@@ -336,6 +348,11 @@ def store_message(cursor, parsed) -> None:
                 ))
 
             psycopg2.extras.execute_batch(c, """INSERT INTO darwin_schedule_locations VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT DO NOTHING;""", batch)
+
+            psycopg2.extras.execute_batch(c, """INSERT INTO darwin_associations
+            (category,tiploc,main_rid,main_original_wt,assoc_rid,assoc_original_wt) SELECT %s,%s,%s,%s,%s,%s WHERE
+            EXISTS (SELECT * FROM darwin_schedule_locations WHERE tiploc=%s AND rid=%s AND original_wt=%s) AND
+            EXISTS (SELECT * FROM darwin_schedule_locations WHERE tiploc=%s AND rid=%s AND original_wt=%s);""", associations_held_back)
 
         if record["tag"]=="TS":
             batch = []

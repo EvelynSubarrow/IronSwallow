@@ -2,7 +2,7 @@ import io, xml.sax, re
 from collections import OrderedDict
 from typing import Optional
 
-from darwin import kb_consts
+from ironswallow.darwin import kb_consts
 
 
 DARWIN_PATHS = ("Pport.uR", "Pport.uR.schedule", "Pport.uR.TS", "Pport.uR.OW", "PportTimetableRef", "PportTimetableRef.LateRunningReasons", "PportTimetableRef.CancellationReasons")
