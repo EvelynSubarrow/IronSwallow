@@ -1,6 +1,7 @@
 import io, xml.sax, re
 from collections import OrderedDict
-from typing import Optional
+from typing import Union, Optional, Tuple
+import traceback
 
 from ironswallow.darwin import kb_consts
 
@@ -9,9 +10,23 @@ DARWIN_PATHS = ("Pport.uR", "Pport.uR.schedule", "Pport.uR.TS", "Pport.uR.OW", "
 DARWIN_DETOKENISE = "Pport.uR.OW.Msg"
 
 
+def parse_darwin_suppress(cm_pair) -> Tuple[int, Union[dict, str, None]]:
+    count, message = cm_pair
+    message_decoded = "-"
+    try:
+        if message:
+            message_decoded = message.decode("utf8")
+            return count, DarwinParser(DARWIN_PATHS, DARWIN_DETOKENISE).parse(io.StringIO(message_decoded))["Pport"].get("uR", {})
+    except Exception as e:
+        return count, message_decoded + "".join(traceback.format_stack())
+    return count, None
+
+
 def parse_darwin(message) -> Optional[dict]:
     if message:
-        return DarwinParser(DARWIN_PATHS, DARWIN_DETOKENISE).parse(io.StringIO(message.decode("utf8")))["Pport"].get("uR", {})
+        message_decoded = message.decode("utf8")
+        return DarwinParser(DARWIN_PATHS, DARWIN_DETOKENISE).parse(io.StringIO(message_decoded))["Pport"].get("uR", {})
+
 
 def parse_kb(text) -> dict:
     return DarwinParser(include_tags=False, folded_list=kb_consts.FOLD_LISTS, exclude_data=kb_consts.EXCLUDE_DATA, collapse_data=kb_consts.FLAT_DATA, collapse_data_types=kb_consts.DATA_TYPES).parse(io.StringIO(text))

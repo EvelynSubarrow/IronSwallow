@@ -220,9 +220,13 @@ def incorporate_ftp(c) -> None:
                     # Because those issues tend to be ones which abort the transaction
                     e2 = None
                     try:
-                        for result in pool.imap(parse.parse_darwin, gzip.open(file)):
+                        for idx,result in pool.imap(parse.parse_darwin_suppress, enumerate(gzip.open(file))):
                             try:
-                                store_message(c, result)
+                                if type(result) == str:
+                                    logging.error("FTP message parse failed (line {})".format(idx))
+                                    logging.error(result)
+                                else:
+                                    store_message(c, result)
                             except Exception as e2:
                                 log.exception(e2)
                                 raise e2
