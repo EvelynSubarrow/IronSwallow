@@ -13,7 +13,6 @@ def parse_darwin(message) -> Optional[dict]:
     if message:
         return DarwinParser(DARWIN_PATHS, DARWIN_DETOKENISE).parse(io.StringIO(message.decode("utf8")))["Pport"].get("uR", {})
 
-
 def parse_kb(text) -> dict:
     return DarwinParser(include_tags=False, folded_list=kb_consts.FOLD_LISTS, exclude_data=kb_consts.EXCLUDE_DATA, collapse_data=kb_consts.FLAT_DATA, collapse_data_types=kb_consts.DATA_TYPES).parse(io.StringIO(text))
 

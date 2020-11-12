@@ -216,12 +216,19 @@ def incorporate_ftp(c) -> None:
                     file_name, file = actual_files[0]
                     log.info("Enqueueing retrieved file {}".format(file_name))
 
-                    for result in pool.imap(parse.parse_darwin, gzip.open(file)):
-                        try:
-                            store_message(c,result)
-                        except Exception as e:
-                            log.exception(e)
-                            raise e
+                    # A little bit messy, here the idea is to capture exceptions in the map, but not the storage
+                    # Because those issues tend to be ones which abort the transaction
+                    e2 = None
+                    try:
+                        for result in pool.imap(parse.parse_darwin, gzip.open(file)):
+                            try:
+                                store_message(c, result)
+                            except Exception as e2:
+                                log.exception(e2)
+                                raise e2
+                    except Exception as e1:
+                        if e2: raise e2
+                        log.exception(e1)
 
                     file.close()
                     del actual_files[0]
