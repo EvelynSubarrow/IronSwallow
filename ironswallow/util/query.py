@@ -14,6 +14,17 @@ def json_default(value) -> str:
     else:
         raise ValueError(type(value))
 
+
+def process_location_outline(location) -> dict:
+    if location:
+        location = location.copy()
+        del location["name_darwin"]
+        del location["name_corpus"]
+        del location["crs_corpus"]
+        del location["operator"]
+    return location
+
+
 def compare_time(t1, t2) -> int:
     if not (t1 and t2):
         return 0
