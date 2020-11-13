@@ -363,7 +363,7 @@ def store_message(cursor, parsed) -> None:
             psycopg2.extras.execute_batch(c, """INSERT INTO darwin_associations
             (category,tiploc,main_rid,main_original_wt,assoc_rid,assoc_original_wt) SELECT %s,%s,%s,%s,%s,%s WHERE
             EXISTS (SELECT * FROM darwin_schedule_locations WHERE tiploc=%s AND rid=%s AND original_wt=%s) AND
-            EXISTS (SELECT * FROM darwin_schedule_locations WHERE tiploc=%s AND rid=%s AND original_wt=%s);""", associations_held_back)
+            EXISTS (SELECT * FROM darwin_schedule_locations WHERE tiploc=%s AND rid=%s AND original_wt=%s) ON CONFLICT DO NOTHING;""", associations_held_back)
 
         if record["tag"]=="TS":
             batch = []

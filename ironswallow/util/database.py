@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
 
-import json, os, sys, argparse
-from collections import Counter, OrderedDict
-
-import psycopg2, psycopg2.extras
+import sqlalchemy
 
 from . import config
+
 
 class DatabaseConnection:
     def __init__(self):
@@ -21,8 +19,9 @@ class DatabaseConnection:
         return False
 
     def connect(self):
-        self.connection = psycopg2.connect(config.get("database-string"))
-        return self.connection
+        self.engine = sqlalchemy.create_engine(config.get("database-string"))
+        self.connection = self.engine.connect().connection
+
 
     def new_cursor(self):
         return self.connection.cursor()
