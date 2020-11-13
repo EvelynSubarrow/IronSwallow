@@ -14,6 +14,8 @@ import stomp
 from ironswallow.util import database, query
 from ironswallow.darwin import parse
 
+from IronSwallowORM import models
+
 LOCATIONS = {}
 REASONS = {}
 
@@ -514,6 +516,9 @@ if __name__ == "__main__":
 
     with open("secret.json") as f:
         SECRET = json.load(f)
+
+    with database.DatabaseConnection() as db_connection:
+        models.create_all(db_connection.engine)
 
     mq = stomp.Connection([(SECRET["hostname"], 61613)],
         keepalive=True, auto_decode=False, heartbeats=(10000, 10000))
