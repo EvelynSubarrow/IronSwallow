@@ -75,20 +75,21 @@ def store_reference_data(c, parsed) -> None:
                 ("operator", reference.get("toc")),
                 ("name_darwin", reference["locname"]*(reference["locname"]!=reference["tpl"]) or None),
                 ("name_corpus", case(strip(corpus_loc.get("NLCDESC")))),
+                ("category", None)
                 ])
             loc.update(OrderedDict([
                 ("name_short",loc["name_darwin"] or loc["name_corpus"]),
                 ("name_full",loc["name_corpus"] or loc["name_darwin"]),
                 ]))
 
-            c.execute("""INSERT INTO darwin_locations VALUES (%s, %s, %s, %s, %s, %s, %s)
+            c.execute("""INSERT INTO darwin_locations VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 ON CONFLICT(tiploc) DO UPDATE SET
-                (tiploc,crs_darwin,crs_corpus,operator,name_short,name_full,dict)=
-                (EXCLUDED.tiploc,EXCLUDED.crs_darwin,EXCLUDED.crs_corpus,EXCLUDED.operator,
-                EXCLUDED.name_short,EXCLUDED.name_full,EXCLUDED.dict);
+                (tiploc, crs_darwin, crs_corpus, operator, name_darwin, name_corpus)=
+                (EXCLUDED.tiploc,EXCLUDED.crs_darwin,EXCLUDED.crs_corpus,
+                EXCLUDED.operator,EXCLUDED.name_darwin,EXCLUDED.name_corpus);
                 """, (loc["tiploc"], loc["crs_darwin"], loc["crs_corpus"], loc["operator"],
                     loc["name_short"], loc["name_full"],
-                    json.dumps(loc)))
+                    json.dumps(loc), loc["category"], loc["name_darwin"], loc["name_corpus"]))
 
             LOCATIONS[reference["tpl"]] = loc
 
