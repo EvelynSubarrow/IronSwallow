@@ -8,6 +8,8 @@ from ironswallow.store import meta
 from ironswallow.util import query
 from main import LOCATIONS, REASONS
 
+OBSERVED_LOCATIONS = set()
+
 log = logging.getLogger("IronSwallow")
 
 def compare_time(t1, t2) -> int:
@@ -49,6 +51,7 @@ def process_reason(reason):
 
 
 def store_message(cursor, parsed) -> None:
+    global OBSERVED_LOCATIONS
     if not parsed:
         return
     c = cursor
@@ -77,6 +80,7 @@ def store_message(cursor, parsed) -> None:
 
             for location in record["list"]:
                 if location["tag"] in ["OPOR", "OR", "OPIP", "IP", "PP", "DT", "OPDT"]:
+                    OBSERVED_LOCATIONS |= {location["tpl"]}
 
                     times = []
                     for time_n, time in [(a, location.get(a, None)) for a in ["pta", "wta", "wtp", "ptd", "wtd"]]:

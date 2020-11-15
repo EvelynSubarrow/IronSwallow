@@ -1,14 +1,10 @@
 #!/usr/bin/env python3
 
-import logging, json, datetime, io, zlib, gzip, multiprocessing, ftplib, tempfile, re
+import logging, json, datetime, zlib, gzip, multiprocessing, ftplib, tempfile
 from time import sleep
-from decimal import Decimal
-from collections import OrderedDict
 from typing import List
 
 import boto3
-import psycopg2
-import psycopg2.extras
 import stomp
 
 from ironswallow.util import database, query
@@ -23,7 +19,7 @@ REASONS = {}
 
 
 def incorporate_reference_data(c) -> None:
-    ironswallow.store.reference.store(c, retrieve_reference_data(c))
+    ironswallow.store.reference.insert.store(c, retrieve_reference_data(c))
 
 
 def retrieve_reference_data(c) -> List[dict]:
@@ -199,7 +195,7 @@ if __name__ == "__main__":
         incorporate_reference_data(cursor)
 
         last_retrieved = query.last_retrieved(cursor)
-        if not last_retrieved or (datetime.datetime.utcnow()-last_retrieved).seconds > 300:
+        if (not last_retrieved or (datetime.datetime.utcnow()-last_retrieved).seconds > 300) and not SECRET.get("no_from_ftp"):
             log.info("Last retrieval too old, using FTP snapshots")
             incorporate_ftp(cursor)
 

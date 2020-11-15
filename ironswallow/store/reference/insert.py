@@ -1,10 +1,12 @@
 from collections import OrderedDict
 import json
+
 from main import REASONS, LOCATIONS
+from . import category
+from . import names
 
 def store(c, parsed) -> None:
     strip = lambda x: x.rstrip() or None if x else None
-    case = lambda x: x.title() if x else x
 
     with open("datasets/corpus.json", encoding="iso-8859-1") as f:
         corpus = json.load(f)["TIPLOCDATA"]
@@ -20,7 +22,7 @@ def store(c, parsed) -> None:
                 ("crs_corpus", strip(corpus_loc.get("3ALPHA"))),
                 ("operator", reference.get("toc")),
                 ("name_darwin", reference["locname"]*(reference["locname"]!=reference["tpl"]) or None),
-                ("name_corpus", case(strip(corpus_loc.get("NLCDESC")))),
+                ("name_corpus", strip(corpus_loc.get("NLCDESC"))),
                 ("category", None)
                 ])
             loc.update(OrderedDict([
@@ -28,11 +30,15 @@ def store(c, parsed) -> None:
                 ("name_full", loc["name_corpus"] or loc["name_darwin"]),
                 ]))
 
+            loc["category"] = category.category_for(loc)
+            loc["name_short"], loc["name_full"] = names.name_for(loc)
+
             c.execute("""INSERT INTO darwin_locations VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 ON CONFLICT(tiploc) DO UPDATE SET
-                (tiploc, crs_darwin, crs_corpus, operator, name_darwin, name_corpus)=
+                (tiploc, crs_darwin, crs_corpus, operator, name_darwin, name_corpus, category, name_short, name_full)=
                 (EXCLUDED.tiploc,EXCLUDED.crs_darwin,EXCLUDED.crs_corpus,
-                EXCLUDED.operator,EXCLUDED.name_darwin,EXCLUDED.name_corpus);
+                EXCLUDED.operator,EXCLUDED.name_darwin,EXCLUDED.name_corpus, EXCLUDED.category,
+                EXCLUDED.name_short, EXCLUDED.name_full);
                 """, (loc["tiploc"], loc["crs_darwin"], loc["crs_corpus"], loc["operator"],
                     loc["name_short"], loc["name_full"],
                     json.dumps(loc), loc["category"], loc["name_darwin"], loc["name_corpus"]))

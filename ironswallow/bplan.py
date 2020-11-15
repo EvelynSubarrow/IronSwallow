@@ -8,8 +8,11 @@ from IronSwallowORM import models
 
 log = logging.getLogger("IronSwallow")
 
+BPLAN_NETWORK_LOCATIONS = {}
+
 # TODO: eventually BPLAN will be updated - how are we going to remove retired data?
 def parse_store_bplan():
+    global BPLAN_NETWORK_LOCATIONS
     log.info("Collecting BPlan")
 
     with database.DatabaseConnection() as db_c:
@@ -38,6 +41,11 @@ def parse_store_bplan():
                         end_date=end_date, initial_direction=initial_direction, final_direction=final_direction,
                         distance=distance, doo_passenger=doo_p, doo_non_passenger=doo_no_p, retb=retb, zone=zone,
                         reversible=reversible, power=power, route_allowance=ra))
+
+                    for tl in [origin_location, dest_location]:
+                        if tl not in BPLAN_NETWORK_LOCATIONS:
+                            BPLAN_NETWORK_LOCATIONS[tl] = set()
+                        BPLAN_NETWORK_LOCATIONS[tl] |= {power}
 
 
         log.info("Merging BPlan")
