@@ -14,6 +14,7 @@ import stomp
 from ironswallow.util import database, query
 from ironswallow.darwin import parse
 import ironswallow.store
+import ironswallow.bplan
 
 from IronSwallowORM import models
 
@@ -194,6 +195,7 @@ if __name__ == "__main__":
         keepalive=True, auto_decode=False, heartbeats=(10000, 10000))
 
     with database.DatabaseConnection() as db_connection, db_connection.new_cursor() as cursor:
+        ironswallow.bplan.parse_store_bplan()
         incorporate_reference_data(cursor)
 
         last_retrieved = query.last_retrieved(cursor)
