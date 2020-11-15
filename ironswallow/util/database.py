@@ -8,6 +8,7 @@ from . import config
 class DatabaseConnection:
     def __init__(self):
         self.connection = None
+        self.sa_connection = None
         self.executed = []
 
     def __enter__(self):
@@ -20,7 +21,8 @@ class DatabaseConnection:
 
     def connect(self):
         self.engine = sqlalchemy.create_engine(config.get("database-string"))
-        self.connection = self.engine.connect().connection
+        self.sa_connection = self.engine.connect()
+        self.connection = self.sa_connection.connection
 
 
     def new_cursor(self):
