@@ -40,7 +40,7 @@ def category_for(loc: dict) -> Optional[str]:
     elif operator == "LT" and corpus.endswith("LT"):
         return "M"
     # Bus tiplocs always *end* (but never start) in BUS.
-    elif "BUS" in corpus and tiploc.endswith("BUS"):
+    elif tiploc.endswith("BUS"):
         return "B"
     elif "BUS" in corpus and ("STATION" in corpus or "STN" in corpus) and tiploc.endswith("BS"):
         return "B"
