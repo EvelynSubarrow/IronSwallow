@@ -54,7 +54,7 @@ RE_SUBSTITUTIONS = [
     (r"\.\.", ".", 1),  # Some of these are a bit ambiguous
     (r"Mt\.", "Mount", 1),
     (r"And ", "& ", 1),
-    (r"Sig", "Signal", 1),
+    (r"Sig ", "Signal ", 1),
     (r"Ell$", "East London Line", 1)
 ]
 
