@@ -43,19 +43,19 @@ RE_SUBSTITUTIONS = [
     (r"\(tps Indic\. Only\)", "", 1),
     (r"Intl", "International", 1),
     (r"Internat'nl", "International", 1),  # THANK YOU GLASGOW PRESTWICK
-    (r"H\.?[Ll]\.?$", "High Level", 1),
-    (r"L\.?[Ll]\.?$", "Low Level", 1),
+    (r"H\.?[Ll]\.?$", "[High Level]", 1),
+    (r"L\.?[Ll]\.?$", "[Low Level]", 1),
     (r"Lt$", "LT", 1),
     (r"I\.o\.w\.?", "Isle of Wight", 1),
     (r"I\.o\.m\.?", "Isle of Man", 1),
     (r"D\.c\.", "D.C.", 1),
-    (r"Dc", "D.C.", 1),
+    (r"Dc$", "D.C.", 1),
     (r"A\.c", "A.C.", 1),
     (r"\.\.", ".", 1),  # Some of these are a bit ambiguous
     (r"Mt\.", "Mount", 1),
     (r"And ", "& ", 1),
     (r"Sig ", "Signal ", 1),
-    (r"Ell$", "East London Line", 1)
+    (r"Ell$", "[East London Line]", 1)
 ]
 
 RE_SUBSTITUTIONS_PATTERNS = tuple((re.compile(p), s, v) for p, s, v in RE_SUBSTITUTIONS)

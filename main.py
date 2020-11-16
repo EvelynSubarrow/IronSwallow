@@ -32,7 +32,7 @@ def retrieve_reference_data(c) -> List[dict]:
     return parsed
 
 
-def incorporate_ftp(c) -> None:
+def incorporate_ftp(mp) -> None:
     ftp = ftplib.FTP(SECRET["ftp-hostname"])
     for n in range(1,31):
         try:
@@ -57,10 +57,10 @@ def incorporate_ftp(c) -> None:
                 actual_files.append((r_filename, temp_file))
 
             log.info("Purging database")
-            c.execute("BEGIN;")
-            c.execute("ALTER TABLE darwin_schedules DISABLE TRIGGER USER;")
-            c.execute("TRUNCATE TABLE darwin_schedule_locations,darwin_schedule_status,darwin_associations,darwin_schedules,darwin_messages;")
-            c.execute("ALTER TABLE darwin_schedules ENABLE TRIGGER USER;")
+            mp.execute("BEGIN;")
+            mp.execute("ALTER TABLE darwin_schedules DISABLE TRIGGER USER;")
+            mp.execute("TRUNCATE TABLE darwin_schedule_locations,darwin_schedule_status,darwin_associations,darwin_schedules,darwin_messages;")
+            mp.execute("ALTER TABLE darwin_schedules ENABLE TRIGGER USER;")
 
             with multiprocessing.Pool(8) as pool:
                 while actual_files:
@@ -77,7 +77,7 @@ def incorporate_ftp(c) -> None:
                                     logging.error("FTP message parse failed (line {})".format(idx))
                                     logging.error(result)
                                 else:
-                                    ironswallow.store.darwin.store_message(c, result)
+                                    mp.store(result)
                             except Exception as e2:
                                 log.exception(e2)
                                 raise e2
@@ -88,7 +88,7 @@ def incorporate_ftp(c) -> None:
                     file.close()
                     del actual_files[0]
 
-            c.execute("COMMIT;")
+            mp.execute("COMMIT;")
             return
         except ftplib.Error as e:
             backoff = min(n**2, 600)
@@ -124,34 +124,33 @@ def connect_and_subscribe(mq):
 
 
 class Listener(stomp.ConnectionListener):
-    def __init__(self, mq, cursor):
+    def __init__(self, mq, mp):
         self._mq = mq
-        self.cursor = cursor
+        self.processor = mp
 
     def on_message(self, headers, message):
         try:
-            c = self.cursor
-            c.execute("BEGIN;")
+            self.processor.execute("BEGIN;")
     
-            c.execute("SELECT * FROM last_received_sequence;")
-            row = c.fetchone()
-            if row and ((row[1]+5)%10000000)<=int(headers["SequenceNumber"]) < 10000000-5:
-                log.error("Skipped sequence count exceeds limit ({}->{})".format(row[1], headers["SequenceNumber"]))
+            # mp.execute("SELECT * FROM last_received_sequence;")
+            # row = c.fetchone()
+            # if row and ((row[1]+5)%10000000)<=int(headers["SequenceNumber"]) < 10000000-5:
+            #     log.error("Skipped sequence count exceeds limit ({}->{})".format(row[1], headers["SequenceNumber"]))
     
             message = zlib.decompress(message, zlib.MAX_WBITS | 32)
     
             try:
-                ironswallow.store.darwin.store_message(self.cursor, parse.parse_darwin(message))
+                self.processor.store(parse.parse_darwin(message))
             except Exception as e:
                 log.exception(e)
             self._mq.ack(id=headers['message-id'], subscription=headers['subscription'])
     
-            c.execute("""INSERT INTO last_received_sequence VALUES (0, %s, %s)
+            self.processor.execute("""INSERT INTO last_received_sequence VALUES (0, %s, %s)
                 ON CONFLICT (id)
                 DO UPDATE SET sequence=EXCLUDED.sequence, time_acquired=EXCLUDED.time_acquired;""", (
                 headers["SequenceNumber"], datetime.datetime.utcnow()))
     
-            c.execute("COMMIT;")
+            self.processor.execute("COMMIT;")
         except Exception as e:
             log.exception(e)
         
@@ -195,17 +194,19 @@ if __name__ == "__main__":
         incorporate_reference_data(cursor)
 
         last_retrieved = query.last_retrieved(cursor)
-        if (not last_retrieved or (datetime.datetime.utcnow()-last_retrieved).seconds > 300) and not SECRET.get("no_from_ftp"):
-            log.info("Last retrieval too old, using FTP snapshots")
-            incorporate_ftp(cursor)
 
-        if not SECRET.get("no_listen_stomp"):
-            mq.set_listener('iron-swallow', Listener(mq, cursor))
-            connect_and_subscribe(mq)
+        with ironswallow.store.darwin.MessageProcessor(cursor) as mp:
+            if (not last_retrieved or (datetime.datetime.utcnow()-last_retrieved).seconds > 300) and not SECRET.get("no_from_ftp"):
+                log.info("Last retrieval too old, using FTP snapshots")
+                incorporate_ftp(mp)
 
-        while True:
-            with db_connection.new_cursor() as c2:
-                ironswallow.store.meta.renew_schedule_meta(c2)
-            sleep(3600*12)
-            with db_connection.new_cursor() as c3:
-                incorporate_reference_data(c3)
+            if not SECRET.get("no_listen_stomp"):
+                mq.set_listener('iron-swallow', Listener(mq, mp))
+                connect_and_subscribe(mq)
+
+            while True:
+                with db_connection.new_cursor() as c2:
+                    ironswallow.store.meta.renew_schedule_meta(c2)
+                sleep(3600*12)
+                with db_connection.new_cursor() as c3:
+                    incorporate_reference_data(c3)
