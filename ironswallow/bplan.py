@@ -17,7 +17,8 @@ def parse_store_bplan():
 
     with database.DatabaseConnection() as db_c:
         #session = models.sessionmaker(bind=db_c.engine)()
-        bplan_batch = []
+        bplan_nwk_batch = []
+        bplan_plt_batch = []
 
         with open("datasets/bplan.txt", encoding="windows-1252") as tsv:
             for line in csv.reader(tsv, delimiter="\t"):
@@ -37,7 +38,7 @@ def parse_store_bplan():
                     doo_no_p = doo_no_p == "Y"
                     retb = retb == "Y"
 
-                    bplan_batch.append(dict(origin=origin_location, destination=dest_location,
+                    bplan_nwk_batch.append(dict(origin=origin_location, destination=dest_location,
                         running_line_code=running_line_code, running_line_desc=running_line_desc, start_date=start_date,
                         end_date=end_date, initial_direction=initial_direction, final_direction=final_direction,
                         distance=distance, doo_passenger=doo_p, doo_non_passenger=doo_no_p, retb=retb, zone=zone,
@@ -48,9 +49,27 @@ def parse_store_bplan():
                             BPLAN_NETWORK_LOCATIONS[tl] = set()
                         BPLAN_NETWORK_LOCATIONS[tl] |= {running_line_code}
 
+                elif line[0] == "PLT":
+                    (record_type, action_code, tiploc, platform, start_date, end_date, length, power, doo_passenger,
+                     doo_non_passenger) = line
+
+                    platform = platform.rstrip() or None
+                    start_date = (datetime.strptime(start_date, "%d-%m-%Y %H:%M:%S") + timedelta(seconds=1)).date() if start_date else None
+                    end_date = (datetime.strptime(end_date, "%d-%m-%Y %H:%M:%S") + timedelta(seconds=1)).date() if end_date else None
+                    doo_passenger = doo_passenger == "Y"
+                    doo_non_passenger = doo_non_passenger == "Y"
+                    length = int(length) if length else None
+
+
+                    bplan_plt_batch.append(dict(tiploc=tiploc, platform=platform, start_date=start_date,
+                                                end_date=end_date, length=length, power=power,
+                                                doo_passenger=doo_passenger, doo_non_passenger=doo_non_passenger))
 
         log.info("Merging BPlan")
         statement = insert(models.BPlanNetworkLink.__table__).on_conflict_do_nothing()
-        db_c.sa_connection.execute(statement, bplan_batch)
+        db_c.sa_connection.execute(statement, bplan_nwk_batch)
+
+        statement = insert(models.BPlanPlatform.__table__).on_conflict_do_nothing()
+        db_c.sa_connection.execute(statement, bplan_plt_batch)
 
         #session.commit()
