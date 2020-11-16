@@ -3,13 +3,20 @@ from typing import Optional
 from ironswallow.bplan import BPLAN_NETWORK_LOCATIONS
 from ironswallow.store.darwin import OBSERVED_LOCATIONS
 
+FORCED_CATEGORIES = {
+    "WEST530": "I",  # For some inexplicable reason Westerton Sig YH350 has a CRS assigned in Darwin
+}
+
 # Z - orphaned location (excepting signals)
 
+# J - junction
 # I - signal
 # G - signalbox
 # X - crossover
 # R - level crossing
 # D - siding
+# T - TMD/EMUD/DMUD/CHS, depots, etc etc etc
+# Q - Freight terminals/recepts
 
 # S - NR station (can be a station with buses/ferries!)
 # M - "metro" station (LT, TW, SJ, etc, but also heritage railways, for now)
@@ -24,14 +31,19 @@ def category_for(loc: dict) -> Optional[str]:
     tiploc = loc["tiploc"]
     operator = loc["operator"]
 
+    if tiploc in FORCED_CATEGORIES:
+        return FORCED_CATEGORIES[tiploc]
     # Signals (which usually have alphanumeric tiplocs) are specifically excluded from this determination because
     # they are not waypoints
-    if tiploc not in BPLAN_NETWORK_LOCATIONS and tiploc not in OBSERVED_LOCATIONS and not tiploc[-1].isnumeric():
+    elif tiploc not in BPLAN_NETWORK_LOCATIONS and tiploc not in OBSERVED_LOCATIONS and not tiploc[-1].isnumeric():
         return "Z"
 
     # Strong and stable operator based determinations
     elif operator == "ZB":
         return "B"
+    # If it's only reachable by ship, it's probably a ferry terminal!
+    elif BPLAN_NETWORK_LOCATIONS.get(tiploc, set()) in [{"SHI"}, {"SHI", ""}]:
+        return "F"
     elif operator == "ZF":
         return "F"
     elif operator in ["TW", "SJ", "NY", "ZM", "PC", "y", "SP"]:
@@ -45,9 +57,9 @@ def category_for(loc: dict) -> Optional[str]:
     elif "BUS" in corpus and ("STATION" in corpus or "STN" in corpus) and tiploc.endswith("BS"):
         return "B"
 
-    # There's a few """bus""" locations that have non-buses. Not cool, NR
-    # elif "(BUS)" in darwin and location_cats(loc.tiploc) in [["BS"], []]:
-    #    loc.category = "B"
+    # If the only way in and out is bus, it's... bus.
+    elif BPLAN_NETWORK_LOCATIONS.get(tiploc, set()) in [{"BUS"}, {"BUS", ""}] and "BUS" in darwin:
+        return "B"
 
     elif operator is not None and crs_darwin is not None and darwin:
         return "S"

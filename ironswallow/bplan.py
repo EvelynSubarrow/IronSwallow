@@ -26,6 +26,7 @@ def parse_store_bplan():
                      running_line_desc, start_date, end_date, initial_direction, final_direction, distance,
                      doo_p, doo_no_p, retb, zone, reversible, power, ra, max_tl) = line
 
+                    running_line_code = running_line_code.rstrip()
                     running_line_desc = running_line_desc or None
                     distance = int(distance) if distance else None
 
@@ -45,7 +46,7 @@ def parse_store_bplan():
                     for tl in [origin_location, dest_location]:
                         if tl not in BPLAN_NETWORK_LOCATIONS:
                             BPLAN_NETWORK_LOCATIONS[tl] = set()
-                        BPLAN_NETWORK_LOCATIONS[tl] |= {power}
+                        BPLAN_NETWORK_LOCATIONS[tl] |= {running_line_code}
 
 
         log.info("Merging BPlan")

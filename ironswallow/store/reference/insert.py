@@ -8,6 +8,8 @@ from . import names
 def store(c, parsed) -> None:
     strip = lambda x: x.rstrip() or None if x else None
 
+    c.execute("DELETE FROM swallow_debug WHERE subsystem='NSUB';")
+
     with open("datasets/corpus.json", encoding="iso-8859-1") as f:
         corpus = json.load(f)["TIPLOCDATA"]
     corpus = {a["TIPLOC"]: a for a in corpus}
@@ -31,7 +33,7 @@ def store(c, parsed) -> None:
                 ]))
 
             loc["category"] = category.category_for(loc)
-            loc["name_short"], loc["name_full"] = names.name_for(loc)
+            loc["name_short"], loc["name_full"] = names.name_for(loc, c)
 
             c.execute("""INSERT INTO darwin_locations VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 ON CONFLICT(tiploc) DO UPDATE SET
