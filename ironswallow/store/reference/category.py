@@ -5,6 +5,7 @@ from ironswallow.store.darwin import OBSERVED_LOCATIONS
 
 FORCED_CATEGORIES = {
     "WEST530": "I",  # For some inexplicable reason Westerton Sig YH350 has a CRS assigned in Darwin
+    "GROSNYM": "M",  # Grosmont North Yorkshire Moors Railway
 }
 
 # Z - orphaned location (excepting signals)
