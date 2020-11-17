@@ -1,6 +1,6 @@
 from typing import Optional
 
-from ironswallow.bplan import BPLAN_NETWORK_LOCATIONS
+from ironswallow.bplan import BPLAN_NETWORK_LOCATIONS, LOCALISED_OTHER_REFERENCES
 from ironswallow.store.darwin import OBSERVED_LOCATIONS
 
 FORCED_CATEGORIES = {
@@ -8,21 +8,24 @@ FORCED_CATEGORIES = {
     "GROSNYM": "M",  # Grosmont North Yorkshire Moors Railway
 }
 
-# Z - orphaned location (excepting signals)
+LOCALISED_OTHER_REFERENCES.extend([
+("IS", "en_gb", "LCAT", "Z", "Unreachable"), # Excl. signals - uncertain how they're pathed
 
-# J - junction
-# I - signal
-# G - signalbox
-# X - crossover
-# R - level crossing
-# D - siding
-# T - TMD/EMUD/DMUD/CHS, depots, etc etc etc
-# Q - Freight terminals/recepts
+("IS", "en_gb", "LCAT", "J", "Junction"),
+("IS", "en_gb", "LCAT", "I", "Signal"),
+("IS", "en_gb", "LCAT", "G", "Signalbox"),
+("IS", "en_gb", "LCAT", "X", "Crossover"),
+("IS", "en_gb", "LCAT", "R", "Level crossing"),
+("IS", "en_gb", "LCAT", "D", "Siding"),
+("IS", "en_gb", "LCAT", "T", "Depot"),
+("IS", "en_gb", "LCAT", "Q", "Freight reception"),
 
-# S - NR station (can be a station with buses/ferries!)
-# M - "metro" station (LT, TW, SJ, etc, but also heritage railways, for now)
-# F - ferry terminal only
-# B - bus only
+("IS", "en_gb", "LCAT", "S", "Mainline station"),
+("IS", "en_gb", "LCAT", "M", "Non-NR station"),
+("IS", "en_gb", "LCAT", "F", "Ferry terminal"),
+("IS", "en_gb", "LCAT", "B", "Bus stop"),
+])
+
 
 def category_for(loc: dict) -> Optional[str]:
     # Might have to make this a little nicer at origin at some point, ah well

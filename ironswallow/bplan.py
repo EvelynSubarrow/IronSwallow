@@ -10,6 +10,8 @@ log = logging.getLogger("IronSwallow")
 
 BPLAN_NETWORK_LOCATIONS = {}
 
+LOCALISED_OTHER_REFERENCES = []
+
 # TODO: eventually BPLAN will be updated - how are we going to remove retired data?
 def parse_store_bplan():
     global BPLAN_NETWORK_LOCATIONS
@@ -19,6 +21,7 @@ def parse_store_bplan():
         #session = models.sessionmaker(bind=db_c.engine)()
         bplan_nwk_batch = []
         bplan_plt_batch = []
+        bplan_ref_batch = []
 
         with open("datasets/bplan.txt", encoding="windows-1252") as tsv:
             for line in csv.reader(tsv, delimiter="\t"):
@@ -60,10 +63,16 @@ def parse_store_bplan():
                     doo_non_passenger = doo_non_passenger == "Y"
                     length = int(length) if length else None
 
-
                     bplan_plt_batch.append(dict(tiploc=tiploc, platform=platform, start_date=start_date,
                                                 end_date=end_date, length=length, power=power,
                                                 doo_passenger=doo_passenger, doo_non_passenger=doo_non_passenger))
+
+                elif line[0] == "REF":
+                    (record_type, action_code, code_type, code, description) = line
+                    if code_type=="ACT":
+                        description = description[:52].rstrip()
+                    bplan_ref_batch.append(dict(source="BPLAN", locale="en_gb", code_type=code_type, code=code,
+                                                description=description))
 
         log.info("Merging BPlan")
         statement = insert(models.BPlanNetworkLink.__table__).on_conflict_do_nothing()
@@ -71,5 +80,10 @@ def parse_store_bplan():
 
         statement = insert(models.BPlanPlatform.__table__).on_conflict_do_nothing()
         db_c.sa_connection.execute(statement, bplan_plt_batch)
+
+        dictified_other_refs = [dict(source=a, locale=b, code_type=c, code=d, description=e) for a, b, c, d, e in LOCALISED_OTHER_REFERENCES]
+
+        statement = insert(models.LocalisedReference.__table__).on_conflict_do_nothing()
+        db_c.sa_connection.execute(statement, bplan_ref_batch + dictified_other_refs)
 
         #session.commit()

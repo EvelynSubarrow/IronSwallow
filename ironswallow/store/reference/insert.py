@@ -5,6 +5,15 @@ from main import REASONS, LOCATIONS
 from . import category
 from . import names
 
+from ironswallow.bplan import LOCALISED_OTHER_REFERENCES
+
+LOCALISED_OTHER_REFERENCES.extend([
+    ("IS", "en_gb", "OPCAT", "S", "Mainline operator"),
+    ("IS", "en_gb", "OPCAT", "M", "Non-NR operator"),
+    ("IS", "en_gb", "OPCAT", "O", "Non-rail operator"),
+    ("IS", "en_gb", "OPCAT", "C", "Charter operator"),
+    ])
+
 def store(c, parsed) -> None:
     strip = lambda x: x.rstrip() or None if x else None
 
