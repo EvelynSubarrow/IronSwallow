@@ -1,6 +1,7 @@
 import csv, logging
 from datetime import datetime,timedelta
 
+from sqlalchemy import PrimaryKeyConstraint, inspect
 from sqlalchemy.dialects.postgresql import insert
 
 import ironswallow.util.database as database
@@ -83,7 +84,9 @@ def parse_store_bplan():
 
         dictified_other_refs = [dict(source=a, locale=b, code_type=c, code=d, description=e) for a, b, c, d, e in LOCALISED_OTHER_REFERENCES]
 
-        statement = insert(models.LocalisedReference.__table__).on_conflict_do_nothing()
+        statement = insert(models.LocalisedReference.__table__)
+        ref_pks = [key.name for key in inspect(models.LocalisedReference).primary_key]
+        statement = statement.on_conflict_do_update(index_elements=ref_pks, set_={"description": statement.excluded.description})
         db_c.sa_connection.execute(statement, bplan_ref_batch + dictified_other_refs)
 
         #session.commit()

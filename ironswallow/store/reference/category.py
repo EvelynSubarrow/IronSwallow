@@ -24,6 +24,23 @@ LOCALISED_OTHER_REFERENCES.extend([
 ("IS", "en_gb", "LCAT", "M", "Non-NR station"),
 ("IS", "en_gb", "LCAT", "F", "Ferry terminal"),
 ("IS", "en_gb", "LCAT", "B", "Bus stop"),
+
+
+("IS", "nb_no", "LCAT", "Z", "Koplet fra jernbanenettverk"),
+
+("IS", "nb_no", "LCAT", "J", "Sporveksel"), # Knutepunkt might be preferable but it's possibly too obscure
+("IS", "nb_no", "LCAT", "I", "Signal"), # The same!
+("IS", "nb_no", "LCAT", "G", "Signalboks"),
+("IS", "nb_no", "LCAT", "X", "Kryssveksel"),
+("IS", "nb_no", "LCAT", "R", "Planovergang"),
+("IS", "nb_no", "LCAT", "D", "Sidespor"),
+("IS", "nb_no", "LCAT", "T", "Depot"), # France has a lot to answer for
+("IS", "nb_no", "LCAT", "Q", "Freight reception"),
+
+("IS", "nb_no", "LCAT", "S", "Hovedlinje stasjon"),
+("IS", "nb_no", "LCAT", "M", "Ikke-NR stasjon"),
+("IS", "nb_no", "LCAT", "F", "Godsterminal"),
+("IS", "nb_no", "LCAT", "B", "Busstopp"),
 ])
 
 

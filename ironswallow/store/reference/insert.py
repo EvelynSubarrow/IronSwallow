@@ -12,6 +12,11 @@ LOCALISED_OTHER_REFERENCES.extend([
     ("IS", "en_gb", "OPCAT", "M", "Non-NR operator"),
     ("IS", "en_gb", "OPCAT", "O", "Non-rail operator"),
     ("IS", "en_gb", "OPCAT", "C", "Charter operator"),
+
+    ("IS", "nb_no", "OPCAT", "S", "Hovedlinje togoperatør"),
+    ("IS", "nb_no", "OPCAT", "M", "Ikke-NR togoperatør"),
+    ("IS", "nb_no", "OPCAT", "O", "Ikke-jernbane operatør"),
+    ("IS", "nb_no", "OPCAT", "C", "Chartertogoperatør"),
     ])
 
 def store(c, parsed) -> None:
