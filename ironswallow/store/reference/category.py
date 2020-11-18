@@ -35,11 +35,11 @@ LOCALISED_OTHER_REFERENCES.extend([
 ("IS", "nb_no", "LCAT", "R", "Planovergang"),
 ("IS", "nb_no", "LCAT", "D", "Sidespor"),
 ("IS", "nb_no", "LCAT", "T", "Depot"), # France has a lot to answer for
-("IS", "nb_no", "LCAT", "Q", "Freight reception"),
+("IS", "nb_no", "LCAT", "Q", "Godsterminal"),
 
 ("IS", "nb_no", "LCAT", "S", "Hovedlinje stasjon"),
 ("IS", "nb_no", "LCAT", "M", "Ikke-NR stasjon"),
-("IS", "nb_no", "LCAT", "F", "Godsterminal"),
+("IS", "nb_no", "LCAT", "F", "Fergeterminal"),
 ("IS", "nb_no", "LCAT", "B", "Busstopp"),
 ])
 
