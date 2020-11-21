@@ -12,12 +12,22 @@ LOCALISED_OTHER_REFERENCES.extend([
     ("IS", "en_gb", "OPCAT", "M", "Non-NR operator"),
     ("IS", "en_gb", "OPCAT", "O", "Non-rail operator"),
     ("IS", "en_gb", "OPCAT", "C", "Charter operator"),
+    ("IS", "en_gb", "OPCAT", "B", "BPLAN operator (do not use)"),
 
     ("IS", "nb_no", "OPCAT", "S", "Hovedlinje togoperatør"),
     ("IS", "nb_no", "OPCAT", "M", "Ikke-NR togoperatør"),
     ("IS", "nb_no", "OPCAT", "O", "Ikke-jernbane operatør"),
     ("IS", "nb_no", "OPCAT", "C", "Chartertogoperatør"),
+    ("IS", "nb_no", "OPCAT", "B", "Operatør fra BPLAN (bruk ikke)")
     ])
+
+def toc_category_for(toc):
+    if toc in ["NY", "PC", "ZM", "WR"]:
+        return "C"
+    if toc in ["LT", "SJ", "TW"]:
+        return "M"
+    if toc in ["ZB", "ZF"]:
+        return "O"
 
 def store(c, parsed) -> None:
     strip = lambda x: x.rstrip() or None if x else None
@@ -62,9 +72,9 @@ def store(c, parsed) -> None:
             LOCATIONS[reference["tpl"]] = loc
 
         if reference["tag"]=="TocRef":
-            c.execute("""INSERT INTO darwin_operators VALUES (%s, %s, %s) ON CONFLICT (operator)
-                DO UPDATE SET (operator_name, url)=(EXCLUDED.operator_name, EXCLUDED.url);""",
-                (reference["toc"], reference["tocname"], reference.get("url")))
+            c.execute("""INSERT INTO darwin_operators VALUES (%s, %s, %s, %s) ON CONFLICT (operator)
+                DO UPDATE SET (operator_name, url, category)=(EXCLUDED.operator_name, EXCLUDED.url, EXCLUDED.category);""",
+                (reference["toc"], reference["tocname"], reference.get("url"), toc_category_for(reference["toc"])))
 
         if reference["tag"] in ["CancellationReasons", "LateRunningReasons"]:
             reason_type = "C"*(reference["tag"]=="CancellationReasons") or "D"
