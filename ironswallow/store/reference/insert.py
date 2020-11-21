@@ -28,6 +28,7 @@ def toc_category_for(toc):
         return "M"
     if toc in ["ZB", "ZF"]:
         return "O"
+    return "S"
 
 def store(c, parsed) -> None:
     strip = lambda x: x.rstrip() or None if x else None

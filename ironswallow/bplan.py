@@ -74,6 +74,12 @@ def parse_store_bplan():
                         description = description[:52].rstrip()
                     bplan_ref_batch.append(dict(source="BPLAN", locale="en_gb", code_type=code_type, code=code,
                                                 description=description))
+                    if code_type=="TOC":
+                        statement = insert(models.DarwinOperator.__table__)
+                        statement = statement.on_conflict_do_update(index_elements=(models.DarwinOperator.operator,),
+                                                                    set_={"operator_name": statement.excluded.operator_name})
+                        db_c.sa_connection.execute(statement, operator=code, operator_name=description, url=None,
+                                                   category="B")
 
         log.info("Merging BPlan")
         statement = insert(models.BPlanNetworkLink.__table__).on_conflict_do_nothing()
