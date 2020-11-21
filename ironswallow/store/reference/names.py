@@ -13,7 +13,13 @@ FORCE_DARWIN_NAMES = {
     "ASHFKY",     # Ashford -(Kent)+International
     "BCSTN",      # Bicester +North
     "BLNGHM",     # Billingham -on Tees
+    "BMLY",       # Bramley -(Hants)+(Hampshire)
+    "BNTEY",      # Bentley +(Hampshire)
+    "BOGSTON",    # Bogston -Port Glasgow
     "BRDS",       # -Birmingham Bordesley
+    "BRGHLRD",    # London Road -Brighton+(Brighton)
+    "BTLYSY",     # Bentley -(S. Yorks)+(South Yorkshire)
+    "CALAFGV",    # +Calais Frethun
     "COOMBE",     # Coombe -(Cornwall)+Coombe Junction Halt
     "EBSFLTI",    # Ebbsfleet +International
     "ELTR",       # Elstree + & Borehamwood

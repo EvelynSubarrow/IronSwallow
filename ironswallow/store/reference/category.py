@@ -6,6 +6,7 @@ from ironswallow.store.darwin import OBSERVED_LOCATIONS
 FORCED_CATEGORIES = {
     "WEST530": "I",  # For some inexplicable reason Westerton Sig YH350 has a CRS assigned in Darwin
     "GROSNYM": "M",  # Grosmont North Yorkshire Moors Railway
+    "YOKERCS": "T",  # Yoker Stabling & Cleaning - I guess this makes a bit more sense but still not really
 }
 
 LOCALISED_OTHER_REFERENCES.extend([
@@ -28,7 +29,7 @@ LOCALISED_OTHER_REFERENCES.extend([
 
 ("IS", "nb_no", "LCAT", "Z", "Koplet fra jernbanenettverk"),
 
-("IS", "nb_no", "LCAT", "J", "Sporveksel"), # Knutepunkt might be preferable but it's possibly too obscure
+("IS", "nb_no", "LCAT", "J", "Sporvekseler"), # Knutepunkt might be preferable but it's possibly too obscure
 ("IS", "nb_no", "LCAT", "I", "Signal"), # The same!
 ("IS", "nb_no", "LCAT", "G", "Signalboks"),
 ("IS", "nb_no", "LCAT", "X", "Kryssveksel"),
