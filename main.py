@@ -159,7 +159,7 @@ class Listener(stomp.ConnectionListener):
 
     def on_heartbeat_timeout(self):
         log.error("Heartbeat timeout")
-        self._mq.set_listener("iron-swallow", self)
+        #self._mq.set_listener("iron-swallow", self)
         connect_and_subscribe(self._mq)
 
     def on_disconnected(self):
