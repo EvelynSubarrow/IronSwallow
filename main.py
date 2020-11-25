@@ -116,7 +116,7 @@ def connect_and_subscribe(mq):
             log.info("Connected!")
             return
         except Exception as e:
-            backoff = min(n**2, 600)
+            backoff = max(min(n**2, 600), 5)
             log.error("Failed to connect, waiting {}s".format(backoff))
             log.exception(e)
             sleep(backoff)
@@ -159,11 +159,11 @@ class Listener(stomp.ConnectionListener):
 
     def on_heartbeat_timeout(self):
         log.error("Heartbeat timeout")
-        #self._mq.set_listener("iron-swallow", self)
-        connect_and_subscribe(self._mq)
 
     def on_disconnected(self):
         log.error("Disconnected")
+        self._mq.set_listener("iron-swallow", self)
+        connect_and_subscribe(self._mq)
 
 if __name__ == "__main__":
     fh = logging.FileHandler('logs/swallow.log')
@@ -207,6 +207,9 @@ if __name__ == "__main__":
             while True:
                 with db_connection.new_cursor() as c2:
                     ironswallow.store.meta.renew_schedule_meta(c2)
-                sleep(3600*12)
+                for n in range(120*12):
+                    if mp.count()>3500:
+                        log.info(f"Database queue count ({mp.count()}) over limit.")
+                    sleep(30)
                 with db_connection.new_cursor() as c3:
                     incorporate_reference_data(c3)

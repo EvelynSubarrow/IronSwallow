@@ -58,15 +58,17 @@ class MessageProcessor:
 
     def __init__(self, cursor):
         self.cursor = cursor
-        self._query_queue = Queue(maxsize=1000)
+        self._query_queue = Queue(maxsize=4000)
         self._query_fetch = LifoQueue()
         self._thread_quit = False
         self._thread_start = False
         self._thread = None
 
+    def count(self) -> int:
+        return self._query_queue.qsize()
+
     def execute(self, query: str, params: Union[tuple, list]=(), batch=False, retain=False, use_retain=False):
         self._query_queue.put((query, params, batch, retain, use_retain))
-
 
     def __enter__(self) -> "MessageProcessor":
         self.thread = threading.Thread(target=self._execute_thread)
