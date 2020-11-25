@@ -58,7 +58,7 @@ class MessageProcessor:
 
     def __init__(self, cursor):
         self.cursor = cursor
-        self._query_queue = Queue(maxsize=4000)
+        self._query_queue = Queue(maxsize=1000)
         self._query_fetch = LifoQueue()
         self._thread_quit = False
         self._thread_start = False

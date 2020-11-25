@@ -55,6 +55,8 @@ def incorporate_ftp(mp) -> None:
                 ftp.retrbinary("RETR {}".format(r_filename), temp_file.write)
                 temp_file.seek(0)
                 actual_files.append((r_filename, temp_file))
+                if SECRET.get("ftp_snapshot_base_snapshot_only", False):
+                    break
 
             log.info("Purging database")
             mp.execute("BEGIN;")
@@ -96,32 +98,6 @@ def incorporate_ftp(mp) -> None:
             sleep(backoff)
     log.error("FTP connection attempts exhausted")
 
-def connect_and_subscribe(mq):
-    for n in range(1,31):
-        try:
-            log.info("Connecting... (attempt %s)" % n)
-            #mq.start()
-            mq.connect(**{
-                "username": SECRET["username"],
-                "passcode": SECRET["password"],
-                "wait": True,
-                "client-id": SECRET["username"],
-                })
-            mq.subscribe(**{
-                "destination": SECRET["subscribe"],
-                "id": 1,
-                "ack": "client-individual",
-                "activemq.subscriptionName": SECRET["identifier"],
-                })
-            log.info("Connected!")
-            return
-        except Exception as e:
-            backoff = max(min(n**2, 600), 5)
-            log.error("Failed to connect, waiting {}s".format(backoff))
-            log.exception(e)
-            sleep(backoff)
-    log.error("Connection attempts exhausted")
-
 
 class Listener(stomp.ConnectionListener):
     def __init__(self, mq, mp):
@@ -131,12 +107,7 @@ class Listener(stomp.ConnectionListener):
     def on_message(self, headers, message):
         try:
             self.processor.execute("BEGIN;")
-    
-            # mp.execute("SELECT * FROM last_received_sequence;")
-            # row = c.fetchone()
-            # if row and ((row[1]+5)%10000000)<=int(headers["SequenceNumber"]) < 10000000-5:
-            #     log.error("Skipped sequence count exceeds limit ({}->{})".format(row[1], headers["SequenceNumber"]))
-    
+
             message = zlib.decompress(message, zlib.MAX_WBITS | 32)
     
             try:
@@ -162,8 +133,37 @@ class Listener(stomp.ConnectionListener):
 
     def on_disconnected(self):
         log.error("Disconnected")
-        self._mq.set_listener("iron-swallow", self)
-        connect_and_subscribe(self._mq)
+        self.connect_and_subscribe()
+
+    def connect_and_subscribe(self):
+        sleep(10)
+        mq = self._mq
+
+        for n in range(1, 31):
+            try:
+                log.info("Connecting... (attempt %s)" % n)
+                mq.connect(**{
+                    "username": SECRET["username"],
+                    "passcode": SECRET["password"],
+                    "wait": True,
+                    "client-id": SECRET["username"],
+                })
+                mq.subscribe(**{
+                    "destination": SECRET["subscribe"],
+                    "id": 1,
+                    "ack": "client-individual",
+                    "activemq.subscriptionName": SECRET["identifier"],
+                })
+                #mq.start()
+                log.info("Connected!")
+                return
+            except Exception as e:
+                backoff = max(min(n ** 2, 600), 10)
+                log.error("Failed to connect, waiting {}s".format(backoff))
+                log.exception(e)
+                sleep(backoff)
+        log.error("Connection attempts exhausted")
+
 
 if __name__ == "__main__":
     fh = logging.FileHandler('logs/swallow.log')
@@ -187,7 +187,7 @@ if __name__ == "__main__":
         models.create_all(db_connection.engine)
 
     mq = stomp.Connection([(SECRET["hostname"], 61613)],
-        keepalive=True, auto_decode=False, heartbeats=(10000, 10000))
+        keepalive=True, auto_decode=False, heartbeats=(35000, 35000))
 
     with database.DatabaseConnection() as db_connection, db_connection.new_cursor() as cursor:
         ironswallow.bplan.parse_store_bplan()
@@ -200,15 +200,20 @@ if __name__ == "__main__":
                 log.info("Last retrieval too old, using FTP snapshots")
                 incorporate_ftp(mp)
 
+            while mp.count() > 100:
+                log.info(f"Waiting for database queue ({mp.count()}) to empty below limit")
+                sleep(10)
+
             if not SECRET.get("no_listen_stomp"):
-                mq.set_listener('iron-swallow', Listener(mq, mp))
-                connect_and_subscribe(mq)
+                listener = Listener(mq, mp)
+                mq.set_listener("iron-swallow", listener)
+                listener.connect_and_subscribe()
 
             while True:
                 with db_connection.new_cursor() as c2:
                     ironswallow.store.meta.renew_schedule_meta(c2)
                 for n in range(120*12):
-                    if mp.count()>3500:
+                    if mp.count() > 500:
                         log.info(f"Database queue count ({mp.count()}) over limit.")
                     sleep(30)
                 with db_connection.new_cursor() as c3:
