@@ -44,7 +44,7 @@ class DarwinParser(xml.sax.ContentHandler):
         (r".*", str)]
     ]
 
-    def __init__(self, list_paths=(), detokenise="<PLACEHOLDER>", folded_list=(), exclude_data=(), collapse_data=(), collapse_data_types={}, strip_whitespace=True, include_tags=True, profile=False):
+    def __init__(self, list_paths=(), detokenise="<PLACEHOLDER>", folded_list=(), exclude_data=(), collapse_data=(), collapse_data_types=(), exclude_keys=(), strip_whitespace=True, include_tags=True, profile=False):
         self._path = []
         self._root = OrderedDict()
         self._dicts = [self._root]
@@ -53,16 +53,19 @@ class DarwinParser(xml.sax.ContentHandler):
         self._folded_list = set(folded_list)
         self._exclude_data = set(exclude_data)
         self._collapse_data = set(collapse_data)
-        self._collapse_types = collapse_data_types
+        self._exclude_keys = set(exclude_keys)
+        self._collapse_types = set(collapse_data_types)
 
         self._collision_paths = []
         self._data_path_status = {}
         self._data_path_count = {}
         self._data_enum = {}
+        self._all_paths = set()
         self._detokenise = detokenise
         self._strip_whitespace = strip_whitespace
         self._include_tags = include_tags
         self._profile = profile
+        self._exclude_key_trigger = False
 
     def startElement(self, name, attrs) -> None:
         name = name.split(":")[-1]
@@ -80,7 +83,15 @@ class DarwinParser(xml.sax.ContentHandler):
                 element_struct["tag"] = name
             element_struct.update([(k, v) for k, v in attrs.items() if not k.startswith("xmlns")])
 
-            if "list" in self._dicts[-1]:
+            if self._profile:
+                #TODO: allow excluding attributes, include them here
+                self._all_paths |= {new_path}
+
+            if self._exclude_key_trigger:
+                pass
+            elif new_path in self._exclude_keys:
+                self._exclude_key_trigger = True
+            elif "list" in self._dicts[-1]:
                 # this is the classic and very silly way of dealing with lists
                 # TODO: convert ironswallow to be less silly
                 self._dicts[-1]["list"].append(element_struct)
@@ -101,7 +112,7 @@ class DarwinParser(xml.sax.ContentHandler):
                             self._collision_paths.append(new_path)
                 self._dicts[-1][name] = element_struct
 
-            if new_path not in self._collapse_data:
+            if new_path not in self._collapse_data and new_path not in self._exclude_keys and not self._exclude_key_trigger:
                 self._dicts.append(element_struct)
 
             if self._path in self._list_paths:
@@ -111,7 +122,12 @@ class DarwinParser(xml.sax.ContentHandler):
         name = name.split(":")[-1]
         current_path = ".".join(self._path)
 
-        if ".".join(self._path).startswith(self._detokenise) and not self._path[-1]==name:
+        if current_path in self._exclude_keys:
+            self._exclude_key_trigger = False
+            self._path.pop()
+        elif self._exclude_key_trigger:
+            self._path.pop()
+        elif ".".join(self._path).startswith(self._detokenise) and not self._path[-1]==name:
             self.characters("</{}>".format(name))
         elif current_path in self._collapse_data:
             contents = self._dicts[-1][self._path[-1]]
@@ -138,7 +154,9 @@ class DarwinParser(xml.sax.ContentHandler):
     def characters(self, data) -> None:
         full_path = ".".join(self._path)
 
-        if full_path in self._collapse_data:
+        if full_path in self._exclude_data or self._exclude_key_trigger:
+            pass
+        elif full_path in self._collapse_data:
             # We're writing back directly to our name
             if full_path in self._folded_list:
                 self._dicts[-1][self._path[-1]][-1] += data
@@ -146,7 +164,7 @@ class DarwinParser(xml.sax.ContentHandler):
                 self._dicts[-1][self._path[-1]] += data
         else:
             # it's going in '$' I guess
-            if "$" not in self._dicts[-1] and full_path not in self._exclude_data:
+            if "$" not in self._dicts[-1]:
                 self._dicts[-1]["$"] = ""
                 if self._profile:
                     if full_path not in self._data_path_status:
