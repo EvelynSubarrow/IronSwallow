@@ -7,6 +7,12 @@ FORCED_CATEGORIES = {
     "WEST530": "I",  # For some inexplicable reason Westerton Sig YH350 has a CRS assigned in Darwin
     "GROSNYM": "M",  # Grosmont North Yorkshire Moors Railway
     "YOKERCS": "T",  # Yoker Stabling & Cleaning - I guess this makes a bit more sense but still not really
+
+    "ELGHTMD": "T",  # Eastleigh TRSMD
+    "ILFEMUD": "T",  # Ilford EMUD,
+    "SLHRSTD": "T",  # Selhurst TRSMD
+
+    "THBDTGE": "D",  # Tilgate Sidings Entry/exit
 }
 
 LOCALISED_OTHER_REFERENCES.extend([
@@ -47,7 +53,8 @@ LOCALISED_OTHER_REFERENCES.extend([
 
 def category_for(loc: dict) -> Optional[str]:
     # Might have to make this a little nicer at origin at some point, ah well
-    corpus = (loc["name_corpus"] or '').upper()
+    corpus = (loc["name_corpus"] or '').upper().replace("  ", " ")
+    corpus_nb = corpus.rsplit("(", 1)[0].rstrip()  # No bracket
     darwin = (loc["name_darwin"] or '').upper()
     crs_darwin = loc["crs_darwin"]
     tiploc = loc["tiploc"]
@@ -98,9 +105,14 @@ def category_for(loc: dict) -> Optional[str]:
         return "R"
     elif "LEVEL CROSSING" in corpus:
         return "R"
-    elif corpus.endswith("SDG") or corpus.endswith("SDGS") or corpus.endswith("SIDING") or corpus.endswith("SIDINGS"):
+    elif (corpus_nb.endswith("EMUD") or corpus_nb.endswith("TMD") or corpus_nb.endswith("DEPOT") or
+          corpus_nb.endswith("CARMD") or corpus_nb.endswith("RSMD") or corpus_nb.endswith("EMD")):
+        return "T"
+    elif (corpus_nb.endswith("SDG") or corpus_nb.endswith("SDGS") or corpus_nb.endswith("SIDING") or
+          corpus_nb.endswith("SIDINGS") or corpus_nb.endswith(" CS") or corpus_nb.endswith("CHS")):
         return "D"
-    elif corpus.endswith("JN") or corpus.endswith("JUNCTION") or corpus.endswith("JCN"):
+    elif (corpus_nb.endswith("JN") or corpus_nb.endswith("JUNCTION") or corpus_nb.endswith("JCN") or
+          corpus_nb.endswith("JCT")):
         return "J"
     elif corpus.endswith("LOOP"):
         return "L"

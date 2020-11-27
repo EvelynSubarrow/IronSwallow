@@ -5,7 +5,7 @@ from main import REASONS, LOCATIONS
 from . import category
 from . import names
 
-from ironswallow.bplan import LOCALISED_OTHER_REFERENCES
+from ironswallow.bplan import LOCALISED_OTHER_REFERENCES, BPLAN_NAMES
 
 LOCALISED_OTHER_REFERENCES.extend([
     ("IS", "en_gb", "OPCAT", "S", "Mainline operator"),
@@ -50,6 +50,7 @@ def store(c, parsed) -> None:
                 ("operator", reference.get("toc")),
                 ("name_darwin", reference["locname"]*(reference["locname"]!=reference["tpl"]) or None),
                 ("name_corpus", strip(corpus_loc.get("NLCDESC"))),
+                ("name_bplan", BPLAN_NAMES.get(reference["tpl"])),
                 ("category", None)
                 ])
             loc.update(OrderedDict([
@@ -60,15 +61,17 @@ def store(c, parsed) -> None:
             loc["category"] = category.category_for(loc)
             loc["name_short"], loc["name_full"] = names.name_for(loc, c)
 
-            c.execute("""INSERT INTO darwin_locations VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            c.execute("""INSERT INTO darwin_locations VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 ON CONFLICT(tiploc) DO UPDATE SET
-                (tiploc, crs_darwin, crs_corpus, operator, name_darwin, name_corpus, category, name_short, name_full)=
+                (tiploc, crs_darwin, crs_corpus, operator, name_darwin, name_corpus, category, name_short, name_full,
+                name_bplan)=
                 (EXCLUDED.tiploc,EXCLUDED.crs_darwin,EXCLUDED.crs_corpus,
                 EXCLUDED.operator,EXCLUDED.name_darwin,EXCLUDED.name_corpus, EXCLUDED.category,
-                EXCLUDED.name_short, EXCLUDED.name_full);
+                EXCLUDED.name_short, EXCLUDED.name_full, EXCLUDED.name_bplan);
                 """, (loc["tiploc"], loc["crs_darwin"], loc["crs_corpus"], loc["operator"],
                     loc["name_short"], loc["name_full"],
-                    json.dumps(loc), loc["category"], loc["name_darwin"], loc["name_corpus"]))
+                    json.dumps(loc), loc["category"], loc["name_darwin"], loc["name_corpus"],
+                      BPLAN_NAMES.get(loc["tiploc"])))
 
             LOCATIONS[reference["tpl"]] = loc
 

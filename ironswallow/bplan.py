@@ -9,6 +9,8 @@ from IronSwallowORM import models
 
 log = logging.getLogger("IronSwallow")
 
+BPLAN_NAMES = {}
+
 BPLAN_NETWORK_LOCATIONS = {}
 
 LOCALISED_OTHER_REFERENCES = []
@@ -80,6 +82,14 @@ def parse_store_bplan():
                                                                     set_={"operator_name": statement.excluded.operator_name})
                         db_c.sa_connection.execute(statement, operator=code, operator_name=description, url=None,
                                                    category="B")
+                elif line[0] == "LOC":
+                    (record_type, action_code, tiploc, location_name, start_date, end_date, os_east, os_north,
+                     tp_type, zone, stanox, off_network, force_lpb) = line
+
+                    end_date = (datetime.strptime(end_date, "%d-%m-%Y %H:%M:%S")) if end_date else None
+
+                    if not end_date or datetime.now() < end_date:
+                        BPLAN_NAMES[tiploc] = location_name
 
         log.info("Merging BPlan")
         statement = insert(models.BPlanNetworkLink.__table__).on_conflict_do_nothing()
