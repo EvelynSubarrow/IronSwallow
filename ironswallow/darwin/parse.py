@@ -36,6 +36,16 @@ def parse_xml(message) -> dict:
     return DarwinParser(DARWIN_PATHS, DARWIN_DETOKENISE).parse(io.StringIO(message.decode("utf8")))
 
 
+def _coerce_bool(text) -> bool:
+    if text.lower() == "true":
+        return True
+    elif text.lower() == "false":
+        return False
+    else:
+        raise ValueError("Key marked as bool type but not a boolean: " + text)
+
+
+
 class DarwinParser(xml.sax.ContentHandler):
     _TYPE_REGEXES = [ (re.compile(k),v) for k,v in
         [(r"^[+-]?\d+\.\d+$", float),
@@ -54,7 +64,11 @@ class DarwinParser(xml.sax.ContentHandler):
         self._exclude_data = set(exclude_data)
         self._collapse_data = set(collapse_data)
         self._exclude_keys = set(exclude_keys)
-        self._collapse_types = set(collapse_data_types)
+        self._collapse_types = dict(collapse_data_types)
+
+        for key,type_ in list(self._collapse_types.items()):
+            if type_ == bool:
+                self._collapse_types[key] = _coerce_bool
 
         self._collision_paths = []
         self._data_path_status = {}

@@ -55,6 +55,14 @@ def category_for(loc: dict) -> Optional[str]:
     # Might have to make this a little nicer at origin at some point, ah well
     corpus = (loc["name_corpus"] or '').upper().replace("  ", " ")
     corpus_nb = corpus.rsplit("(", 1)[0].rstrip()  # No bracket
+
+    bplan_name = (loc["name_bplan"] or '').upper()
+    bplan_nb = bplan_name.rsplit("(", 1)[0].rstrip()
+
+    netr_name = (bplan_name or corpus).replace(".", "")
+    netr_nb = netr_name.rsplit("(", 1)[0].rstrip()  # No bracket
+
+
     darwin = (loc["name_darwin"] or '').upper()
     crs_darwin = loc["crs_darwin"]
     tiploc = loc["tiploc"]
@@ -105,8 +113,9 @@ def category_for(loc: dict) -> Optional[str]:
         return "R"
     elif "LEVEL CROSSING" in corpus:
         return "R"
-    elif (corpus_nb.endswith("EMUD") or corpus_nb.endswith("TMD") or corpus_nb.endswith("DEPOT") or
-          corpus_nb.endswith("CARMD") or corpus_nb.endswith("RSMD") or corpus_nb.endswith("EMD")):
+    elif (netr_name.endswith("EMUD") or netr_name.endswith("TMD") or netr_name.endswith("DEPOT") or
+          netr_name.endswith("CARMD") or netr_name.endswith("RSMD") or netr_name.endswith("EMD") or
+          netr_name.endswith("LMD") or bplan_name.endswith(" LIP")):
         return "T"
     elif (corpus_nb.endswith("SDG") or corpus_nb.endswith("SDGS") or corpus_nb.endswith("SIDING") or
           corpus_nb.endswith("SIDINGS") or corpus_nb.endswith(" CS") or corpus_nb.endswith("CHS")):

@@ -89,14 +89,21 @@ CORPUS_RE_SUBSTITUTIONS = [
 CORPUS_RE_SUBSTITUTIONS_PATTERNS = tuple((re.compile(p), s, v) for p, s, v in CORPUS_RE_SUBSTITUTIONS)
 
 BPLAN_RE_SUBSTITUTIONS = [
-    (r"E\.?m\.?u\.?d\.?", "Electric Multiple Unit Depot",                   "EMUD",  1),
-    (r"D\.?m\.?u\.?",     "Diesel Multiple Unit",                           "DMU",   1),
-    (r"E\.?m\.?u\.?",     "Electric Multiple Unit",                         "EMU",   1),
-    (r"T\.?m\.?d\.?",     "Traction Maintenance Depot",                     "TMD",   1),
-    (r"T&rs\s?[Mm]d",     "Traction & Rolling Stock Maintenance Depot",     "TRSMD", 1),
+    (r"J(n|cn|ct|unction)",             "Junction",                                       "Jn",       0),
+
+    (r"E\.?M\.?U\.?D\.?",               "Electric Multiple Unit Depot",                   "EMUD",     1),
+    (r"D\.?M\.?U\.?",                   "Diesel Multiple Unit",                           "DMU",      1),
+    (r"E\.?M\.?U\.?",                   "Electric Multiple Unit",                         "EMU",      1),
+    (r"T\.?M\.?D\.?",                   "Traction Maintenance Depot",                     "TMD",      1),
+    (r"T\.?&[\.\s]?R\.?S\.?M\.?D\.?",   "Traction & Rolling Stock Maintenance Depot",     "TRSMD",    1),
+    (r"P Way",                          "Permanent Way",                                  "Pmt. way", 1),
+    (r"Car\. M\.D\.?",                  "Carriage Maintenance Depot",                     "CMD",      1),
+
+    (r"Sdg",                            "Siding",                                         "Sdg",      1),
+    (r"C\?.H\?.S\?.",                   "Carriage Holding Sidings",                       "CHSdg",    1),
 ]
 
-BPLAN_RE_SUBSTITUTIONS_PATTERNS = tuple((re.compile(p), s, v) for p, s, v in BPLAN_RE_SUBSTITUTIONS)
+BPLAN_RE_SUBSTITUTIONS_PATTERNS = tuple((re.compile(p), f, s, v) for p, f, s, v in BPLAN_RE_SUBSTITUTIONS)
 
 
 def _case(st: Optional[str]) -> Optional[str]:
@@ -123,18 +130,26 @@ def name_for(loc: dict, cursor) -> tuple:
     bplan = loc["name_bplan"]
 
     corpus_cased = _case(corpus)
-    # if loc["tiploc"] in FORCE_DARWIN_NAMES:
-    #     corpus_cased = darwin
+
 
     if loc["tiploc"] in FULL_NAME_SUBSTITUTIONS:
         return FULL_NAME_SUBSTITUTIONS[loc["tiploc"]]
 
-    expanded = corpus_cased
+    corpus_expanded = corpus_cased
     for pattern, sub, verbosity in CORPUS_RE_SUBSTITUTIONS_PATTERNS:
-        if pattern.search(expanded):
-            expanded_before = expanded
-            expanded = pattern.sub(sub, expanded)
-            cursor.execute("INSERT INTO swallow_debug VALUES ('NSUB', %s, %s, %s, %s);", (loc["tiploc"], pattern.pattern, datetime.utcnow(), expanded_before + " -> " + expanded))
+        if pattern.search(corpus_expanded):
+            expanded_before = corpus_expanded
+            corpus_expanded = pattern.sub(sub, corpus_expanded)
+            cursor.execute("INSERT INTO swallow_debug VALUES ('NSUB', %s, %s, %s, %s) ON CONFLICT DO NOTHING;", (loc["tiploc"], pattern.pattern, datetime.utcnow(), expanded_before + " -> " + corpus_expanded))
+
+    bplan_short = bplan
+    bplan_full = bplan
+    for pattern, sub_full, sub_short, verbosity in BPLAN_RE_SUBSTITUTIONS_PATTERNS:
+        if pattern.search(bplan_full):
+            expanded_before = bplan_full
+            bplan_full = pattern.sub(sub_full, bplan_full)
+            bplan_short = pattern.sub(sub_short, bplan_short)
+            cursor.execute("INSERT INTO swallow_debug VALUES ('BSUS', %s, %s, %s, %s) ON CONFLICT DO NOTHING;", (loc["tiploc"], pattern.pattern, datetime.utcnow(), expanded_before + " -> " + bplan_full))
 
 
-    return expanded, bplan or corpus
+    return bplan_short or corpus_expanded, bplan_full or corpus_expanded
