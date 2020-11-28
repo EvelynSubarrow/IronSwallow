@@ -100,9 +100,9 @@ def incorporate_ftp(mp) -> None:
 
 
 class Listener(stomp.ConnectionListener):
-    def __init__(self, mq, mp):
-        self._mq = mq
+    def __init__(self, mp):
         self.processor = mp
+        self._mq = None
 
     def on_message(self, headers, message):
         try:
@@ -137,7 +137,10 @@ class Listener(stomp.ConnectionListener):
 
     def connect_and_subscribe(self):
         sleep(10)
-        mq = self._mq
+        mq = stomp.Connection([(SECRET["hostname"], 61613)],
+                              keepalive=True, auto_decode=False, heartbeats=(35000, 35000))
+        self._mq = mq
+        mq.set_listener("iron-swallow", self)
 
         for n in range(1, 31):
             try:
@@ -154,7 +157,6 @@ class Listener(stomp.ConnectionListener):
                     "ack": "client-individual",
                     "activemq.subscriptionName": SECRET["identifier"],
                 })
-                #mq.start()
                 log.info("Connected!")
                 return
             except Exception as e:
@@ -186,8 +188,6 @@ if __name__ == "__main__":
     with database.DatabaseConnection() as db_connection:
         models.create_all(db_connection.engine)
 
-    mq = stomp.Connection([(SECRET["hostname"], 61613)],
-        keepalive=True, auto_decode=False, heartbeats=(35000, 35000))
 
     with database.DatabaseConnection() as db_connection, db_connection.new_cursor() as cursor:
         ironswallow.bplan.parse_store_bplan()
@@ -205,8 +205,7 @@ if __name__ == "__main__":
                 sleep(10)
 
             if not SECRET.get("no_listen_stomp"):
-                listener = Listener(mq, mp)
-                mq.set_listener("iron-swallow", listener)
+                listener = Listener(mp)
                 listener.connect_and_subscribe()
 
             while True:
