@@ -130,8 +130,8 @@ class Listener(stomp.ConnectionListener):
         except Exception as e:
             log.exception(e)
         
-    def on_error(self, headers, message):
-        log.error('received an error "%s"' % message)
+    def on_error(self, headers, message: bytes):
+        log.error('received an error "%s"' % message.split(b"\n")[0])
 
     def on_heartbeat_timeout(self):
         log.error("Heartbeat timeout")
