@@ -26,6 +26,7 @@ LOCALISED_OTHER_REFERENCES.extend([
 ("IS", "en_gb", "LCAT", "D", "Siding"),
 ("IS", "en_gb", "LCAT", "T", "Depot"),
 ("IS", "en_gb", "LCAT", "Q", "Freight reception"),
+("IS", "en_gb", "LCAT", "V", "Viaduct"),
 
 ("IS", "en_gb", "LCAT", "S", "Mainline station"),
 ("IS", "en_gb", "LCAT", "M", "Non-NR station"),
@@ -35,7 +36,7 @@ LOCALISED_OTHER_REFERENCES.extend([
 
 ("IS", "nb_no", "LCAT", "Z", "Koplet fra jernbanenettverk"),
 
-("IS", "nb_no", "LCAT", "J", "Sporvekseler"), # Knutepunkt might be preferable but it's possibly too obscure
+("IS", "nb_no", "LCAT", "J", "Sporvekseler"), # "Knutepunkt" er kanskje bedre
 ("IS", "nb_no", "LCAT", "I", "Signal"), # The same!
 ("IS", "nb_no", "LCAT", "G", "Signalboks"),
 ("IS", "nb_no", "LCAT", "X", "Kryssveksel"),
@@ -43,6 +44,7 @@ LOCALISED_OTHER_REFERENCES.extend([
 ("IS", "nb_no", "LCAT", "D", "Sidespor"),
 ("IS", "nb_no", "LCAT", "T", "Depot"), # France has a lot to answer for
 ("IS", "nb_no", "LCAT", "Q", "Godsterminal"),
+("IS", "nb_no", "LCAT", "V", "Viadukt"),
 
 ("IS", "nb_no", "LCAT", "S", "Hovedlinje stasjon"),
 ("IS", "nb_no", "LCAT", "M", "Ikke-NR stasjon"),
@@ -50,18 +52,27 @@ LOCALISED_OTHER_REFERENCES.extend([
 ("IS", "nb_no", "LCAT", "B", "Busstopp"),
 ])
 
+def _unbracketise(name: str) -> str:
+    name = name.rstrip()
+    if name.endswith(")") or ("(" in name and ")" not in name):
+        name = name.rsplit("(", 1)[0].rstrip()
+    if name.upper().endswith(" GBRF"):
+        name = name[:-5]
+    return name
 
 def category_for(loc: dict) -> Optional[str]:
     # Might have to make this a little nicer at origin at some point, ah well
-    corpus = (loc["name_corpus"] or '').upper().replace("  ", " ")
-    corpus_nb = corpus.rsplit("(", 1)[0].rstrip()  # No bracket
+    bplan_orig = (loc["name_bplan"] or '').rstrip()
+    corpus_orig = (loc["name_corpus"] or '').rstrip()
 
-    bplan_name = (loc["name_bplan"] or '').upper()
-    bplan_nb = bplan_name.rsplit("(", 1)[0].rstrip()
+    corpus = _unbracketise(corpus_orig)
 
-    netr_name = (bplan_name or corpus).replace(".", "")
-    netr_nb = netr_name.rsplit("(", 1)[0].rstrip()  # No bracket
+    bplan = _unbracketise(bplan_orig.upper()) # Uppercased to make it more equivalent to CORPUS
 
+    # utter nightmare sorry, this is really just for differentiating and pulling acronyms from BPLAN
+    bplan_nbc = _unbracketise(bplan_orig).replace(".", "")
+
+    netr_name = (bplan or corpus).replace(".", "")
 
     darwin = (loc["name_darwin"] or '').upper()
     crs_darwin = loc["crs_darwin"]
@@ -101,27 +112,36 @@ def category_for(loc: dict) -> Optional[str]:
     elif operator is not None and crs_darwin is not None and darwin:
         return "S"
     # This seems pretty straightforward. Representative CORPUS example: WORK621 -> Worksop Signal Wp621
-    elif ("SIGNAL" in corpus or "SIG" in corpus) and tiploc[-1].isnumeric():
+    elif ("SIGNAL" in netr_name or "SIG" in netr_name) and tiploc[-1].isnumeric():
         return "I"
-    elif corpus.endswith("SIGNAL") or corpus.endswith("SIG"):
+    elif corpus.endswith("SIGNAL") or corpus.endswith("SIG") or netr_name.endswith("STOP BOARD"):
         return "I"
-    elif "SIGNAL BOX" in corpus or "SIGNALBOX" in corpus:
+    elif ("SIGNAL BOX" in netr_name or "SIGNALBOX" in netr_name or netr_name.endswith(" GROUND FRAME")
+          or netr_name.endswith(" SB") or netr_name.endswith(" GF")):
         return "G"
-    elif "CROSSOVER" in corpus or "XOVER" in corpus:
+    elif "CROSSOVER" in netr_name or "XOVER" in netr_name:
         return "X"
-    elif "AHB" in corpus:
+    elif "AHB" in netr_name:
         return "R"
-    elif "LEVEL CROSSING" in corpus:
+    elif netr_name.endswith("LEVEL CROSSING") or netr_name.endswith(" L XING") or netr_name.endswith(" LC"):
         return "R"
-    elif (netr_name.endswith("EMUD") or netr_name.endswith("TMD") or netr_name.endswith("DEPOT") or
-          netr_name.endswith("CARMD") or netr_name.endswith("RSMD") or netr_name.endswith("EMD") or
-          netr_name.endswith("LMD") or bplan_name.endswith(" LIP")):
+    elif (netr_name.endswith(" FD") or netr_name.endswith(" CCD") or netr_name.endswith("FLT") or
+          netr_name.endswith("CHP") or netr_name.endswith(" CT") or netr_name.endswith(" TERMINAL") or
+          netr_name.endswith(" TERM")):
+        return "Q"
+    elif (netr_name.endswith("EMUD") or netr_name.endswith("DMUD") or netr_name.endswith("TMD") or
+          netr_name.endswith("DEPOT") or netr_name.endswith("CARMD") or netr_name.endswith("RSMD") or
+          netr_name.endswith("EMD") or netr_name.endswith("LMD") or bplan_nbc.endswith(" LIP") or
+          netr_name.endswith("H S T D") or netr_name.endswith("HSTD") or netr_name.endswith("WRD") or
+          netr_name.endswith("WRCS")):
         return "T"
-    elif (corpus_nb.endswith("SDG") or corpus_nb.endswith("SDGS") or corpus_nb.endswith("SIDING") or
-          corpus_nb.endswith("SIDINGS") or corpus_nb.endswith(" CS") or corpus_nb.endswith("CHS")):
+    elif (netr_name.endswith("SDG") or netr_name.endswith("SDGS") or netr_name.endswith("SIDING") or
+          netr_name.endswith("SIDINGS") or netr_name.endswith(" CS") or netr_name.endswith("CHS") or
+          netr_name.endswith("WHS") or netr_name.endswith(" RS") or netr_name.endswith(" EXS") or
+          netr_name.endswith("RECEPTION") or netr_name.endswith("RECP") or netr_name.endswith(" SS")):
         return "D"
-    elif (corpus_nb.endswith("JN") or corpus_nb.endswith("JUNCTION") or corpus_nb.endswith("JCN") or
-          corpus_nb.endswith("JCT")):
+    elif (netr_name.endswith("JN") or netr_name.endswith("JUNCTION") or netr_name.endswith("JCN") or
+          netr_name.endswith("JCT")):
         return "J"
     elif corpus.endswith("LOOP"):
         return "L"

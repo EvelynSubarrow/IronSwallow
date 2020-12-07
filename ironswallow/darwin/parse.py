@@ -6,26 +6,34 @@ import traceback
 from ironswallow.darwin import kb_consts
 
 
-DARWIN_PATHS = ("Pport.uR", "Pport.uR.schedule", "Pport.uR.TS", "Pport.uR.OW", "PportTimetableRef", "PportTimetableRef.LateRunningReasons", "PportTimetableRef.CancellationReasons")
-DARWIN_DETOKENISE = "Pport.uR.OW.Msg"
+DARWIN_PATHS = ("Pport.uR", "Pport.uR.schedule", "Pport.uR.TS", "Pport.uR.OW",
+                "Pport.sR", "Pport.sR.schedule", "Pport.sR.TS", "Pport.sR.OW",
+                "PportTimetableRef", "PportTimetableRef.LateRunningReasons", "PportTimetableRef.CancellationReasons"
+                )
+DARWIN_NAMED_LIST_PATHS = (
+    'Pport.uR.scheduleFormations.formation.coaches.coach', 'Pport.sR.scheduleFormations.formation.coaches.coach',
+    'Pport.sR.scheduleFormations.formation', 'Pport.uR.scheduleFormations.formation'
+)
+DARWIN_DETOKENISE = ("Pport.uR.OW.Msg", "Pport.sR.OW.Msg")
 
 
-def parse_darwin_suppress(cm_pair) -> Tuple[int, Union[dict, str, None]]:
+def parse_darwin_suppress(cm_pair) -> Tuple[int, Union[list, str, None]]:
     count, message = cm_pair
     message_decoded = "-"
     try:
         if message:
             message_decoded = message.decode("utf8")
-            return count, DarwinParser(DARWIN_PATHS, DARWIN_DETOKENISE).parse(io.StringIO(message_decoded))["Pport"].get("uR", {})
+            return count, parse_darwin(message)
     except Exception as e:
         return count, message_decoded + "".join(traceback.format_stack())
     return count, None
 
 
-def parse_darwin(message) -> Optional[dict]:
+def parse_darwin(message) -> Optional[list]:
     if message:
         message_decoded = message.decode("utf8")
-        return DarwinParser(DARWIN_PATHS, DARWIN_DETOKENISE).parse(io.StringIO(message_decoded))["Pport"].get("uR", {})
+        parsed = DarwinParser(DARWIN_PATHS, DARWIN_DETOKENISE, folded_list=DARWIN_NAMED_LIST_PATHS).parse(io.StringIO(message_decoded))["Pport"]
+        return (parsed.get("uR", {}) or parsed.get("sR", {})).get("list", [])
 
 
 def parse_kb(text) -> dict:
@@ -54,7 +62,7 @@ class DarwinParser(xml.sax.ContentHandler):
         (r".*", str)]
     ]
 
-    def __init__(self, list_paths=(), detokenise="<PLACEHOLDER>", folded_list=(), exclude_data=(), collapse_data=(), collapse_data_types=(), exclude_keys=(), strip_whitespace=True, include_tags=True, profile=False):
+    def __init__(self, list_paths=(), detokenise=(), folded_list=(), exclude_data=(), collapse_data=(), collapse_data_types=(), exclude_keys=(), strip_whitespace=True, include_tags=True, profile=False):
         self._path = []
         self._root = OrderedDict()
         self._dicts = [self._root]
@@ -85,7 +93,7 @@ class DarwinParser(xml.sax.ContentHandler):
         name = name.split(":")[-1]
         current_path = ".".join(self._path)
 
-        if current_path.startswith(self._detokenise):
+        if current_path in self._detokenise:
             # rewrite tag back to text
             self.characters("<{}{}{}>".format(name, " "*bool(len(attrs)), " ".join(['{}="{}"'.format(k, v) for k, v in attrs.items()])))
         else:
@@ -141,7 +149,7 @@ class DarwinParser(xml.sax.ContentHandler):
             self._path.pop()
         elif self._exclude_key_trigger:
             self._path.pop()
-        elif ".".join(self._path).startswith(self._detokenise) and not self._path[-1]==name:
+        elif ".".join(self._path) in self._detokenise and not self._path[-1] == name:
             self.characters("</{}>".format(name))
         elif current_path in self._collapse_data:
             contents = self._dicts[-1][self._path[-1]]

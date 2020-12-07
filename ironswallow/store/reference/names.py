@@ -92,6 +92,7 @@ BPLAN_RE_SUBSTITUTIONS = [
     (r"J(n|cn|ct|unction)",             "Junction",                                       "Jn",       0),
 
     (r"E\.?M\.?U\.?D\.?",               "Electric Multiple Unit Depot",                   "EMUD",     1),
+    (r"D\.?M\.?U\.?D\.?",               "Diesel Multiple Unit Depot",                     "DMUD",     1),
     (r"D\.?M\.?U\.?",                   "Diesel Multiple Unit",                           "DMU",      1),
     (r"E\.?M\.?U\.?",                   "Electric Multiple Unit",                         "EMU",      1),
     (r"T\.?M\.?D\.?",                   "Traction Maintenance Depot",                     "TMD",      1),
@@ -152,4 +153,4 @@ def name_for(loc: dict, cursor) -> tuple:
             cursor.execute("INSERT INTO swallow_debug VALUES ('BSUS', %s, %s, %s, %s) ON CONFLICT DO NOTHING;", (loc["tiploc"], pattern.pattern, datetime.utcnow(), expanded_before + " -> " + bplan_full))
 
 
-    return bplan_short or corpus_expanded, bplan_full or corpus_expanded
+    return bplan_short.rstrip() or corpus_expanded, bplan_full.rstrip() or corpus_expanded

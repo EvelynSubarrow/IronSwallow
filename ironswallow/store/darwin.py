@@ -109,8 +109,8 @@ class MessageProcessor:
 
         assoc_batch = []
 
-        for record in parsed.get("list", []):
-            if record["tag"]=="schedule":
+        for record in parsed:
+            if record["tag"] == "schedule":
 
                 index = 0
                 last_time, ssd_offset = None, 0
@@ -262,7 +262,17 @@ class MessageProcessor:
                     assoc_batch.append((record["category"], record["tiploc"], record["main"]["rid"], main_owt, record["assoc"]["rid"], assoc_owt,
                                         record["tiploc"], record["main"]["rid"], main_owt,
                                         record["tiploc"], record["assoc"]["rid"], assoc_owt))
-
+            if record["tag"] == "scheduleFormations":
+                self.execute("DELETE FROM darwin_formations WHERE rid=%s;", (record["rid"],))
+                coach_batch = []
+                seq = 0
+                for formation in record["formation"]:
+                    for coach in formation["coaches"]["coach"]:
+                        coach_batch.append((record["rid"], formation["fid"], seq, coach["coachNumber"], coach["coachClass"],
+                                    coach["toilet"].get("status"), coach["toilet"]["$"]))
+                        seq += 1
+                self.execute("INSERT INTO darwin_formations VALUES (%s, %s, %s, %s, %s, %s, %s) ON CONFLICT DO NOTHING;",
+                             coach_batch, batch=True)
         if assoc_batch:
             self.execute("""INSERT INTO darwin_associations SELECT %s, %s, %s, %s, %s, %s WHERE
                                 EXISTS (SELECT * FROM darwin_schedule_locations WHERE tiploc=%s AND rid=%s AND original_wt=%s) AND
