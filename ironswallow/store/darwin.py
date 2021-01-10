@@ -15,6 +15,18 @@ OBSERVED_LOCATIONS = set()
 
 log = logging.getLogger("IronSwallow")
 
+COACH_CLASS_SHORT = {
+    "First": "1",
+    "Standard": "2",
+    "Composite": "C", # Hedging bets, these aren't present in data, either a carriage is first or sec- standard
+    "Both": "C"
+    }
+
+TOILET_TYPE_SHORT = {
+    "Accessible": "A",
+    "Standard": "L",
+}
+
 def compare_time(t1, t2) -> int:
     if not (t1 and t2):
         return 0
@@ -264,15 +276,38 @@ class MessageProcessor:
                                         record["tiploc"], record["assoc"]["rid"], assoc_owt))
             if record["tag"] == "scheduleFormations":
                 self.execute("DELETE FROM darwin_formations WHERE rid=%s;", (record["rid"],))
+                formation_summaries = []
                 coach_batch = []
                 seq = 0
                 for formation in record["formation"]:
+                    unit_coaches = OrderedDict()
                     for coach in formation["coaches"]["coach"]:
-                        coach_batch.append((record["rid"], formation["fid"], seq, coach["coachNumber"], coach["coachClass"],
-                                    coach["toilet"].get("status"), coach["toilet"]["$"]))
+                        # Put the coach characteristics in nice variables
+                        coach_number = coach["coachNumber"]
+                        coach_class = coach["coachClass"]
+                        coach_toilet_status = coach["toilet"].get("status")
+                        coach_toilet_type = coach["toilet"]["$"]
+
+                        # Make a summary from it
+                        summary_part_1 = COACH_CLASS_SHORT.get(coach_class, "?")
+                        summary_part_2 = TOILET_TYPE_SHORT.get(coach_toilet_type, "")
+                        summary_part_3 = "*"*(coach_toilet_status == "NotInService")
+
+                        coach_prefix = coach_number[0] if coach_number[0].isalpha() else ""
+                        unit_coaches[coach_prefix] = unit_coaches.get(coach_prefix) or []
+
+                        unit_coaches[coach_prefix].append(summary_part_1 + summary_part_2 + summary_part_3)
+
+                        coach_batch.append((record["rid"], formation["fid"], seq, coach_number, coach_class,
+                                    coach_toilet_status, coach_toilet_type))
                         seq += 1
+
+                    formation_summaries.append("=".join(["-".join(a) for a in unit_coaches.values()]))
+
                 self.execute("INSERT INTO darwin_formations VALUES (%s, %s, %s, %s, %s, %s, %s) ON CONFLICT DO NOTHING;",
                              coach_batch, batch=True)
+                self.execute("UPDATE darwin_schedules SET formation_summary=%s WHERE rid=%s;",
+                             (" / ".join(formation_summaries), record["rid"]))
         if assoc_batch:
             self.execute("""INSERT INTO darwin_associations SELECT %s, %s, %s, %s, %s, %s WHERE
                                 EXISTS (SELECT * FROM darwin_schedule_locations WHERE tiploc=%s AND rid=%s AND original_wt=%s) AND
